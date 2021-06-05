@@ -84,7 +84,6 @@ jobs:
         echo ::set-output name=docker_FFMPEG_VERSION::${FFMPEG_VERSION}
         echo ::set-output name=docker_AOM::${AOM}
         echo ::set-output name=docker_FDKAAC::${FDKAAC}
-        echo ::set-output name=docker_FFMPEG_HARD::${FFMPEG_HARD}
         echo ::set-output name=docker_FONTCONFIG::${FONTCONFIG}
         echo ::set-output name=docker_FREETYPE::${FREETYPE}
         echo ::set-output name=docker_FRIBIDI::${FRIBIDI}
@@ -138,7 +137,6 @@ jobs:
           FFMPEG_VERSION=${{ steps.prepare.outputs.docker_FFMPEG_VERSION }}
           AOM=${{ steps.prepare.outputs.docker_AOM }}
           FDKAAC=${{ steps.prepare.outputs.docker_FDKAAC }}
-          FFMPEG_HARD=${{ steps.prepare.outputs.docker_FFMPEG_HARD }}
           FONTCONFIG=${{ steps.prepare.outputs.docker_FONTCONFIG }}
           FREETYPE=${{ steps.prepare.outputs.docker_FREETYPE }}
           FRIBIDI=${{ steps.prepare.outputs.docker_FRIBIDI }}

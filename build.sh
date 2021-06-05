@@ -5,7 +5,7 @@
 # File Created: Saturday, 5th June 2021 1:08:20 am
 # Author: Josh.5 (jsunnex@gmail.com)
 # -----
-# Last Modified: Saturday, 5th June 2021 4:18:24 am
+# Last Modified: Saturday, 5th June 2021 4:31:41 am
 # Modified By: Josh.5 (jsunnex@gmail.com)
 ###
 
@@ -19,7 +19,6 @@ docker build --pull \
     --build-arg BUILD_DATE=${BUILD_DATE} \
     --build-arg AOM=${AOM} \
     --build-arg FDKAAC=${FDKAAC} \
-    --build-arg FFMPEG_HARD=${FFMPEG_HARD} \
     --build-arg FONTCONFIG=${FONTCONFIG} \
     --build-arg FREETYPE=${FREETYPE} \
     --build-arg FRIBIDI=${FRIBIDI} \

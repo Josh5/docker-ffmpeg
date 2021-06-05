@@ -81,6 +81,7 @@ RUN \
         && make \
         && make install
 
+# https://github.com/mstorsjo/fdk-aac/releases
 ARG FDKAAC
 RUN \
     echo "**** grabbing fdk-aac ****" \
@@ -234,14 +235,15 @@ RUN \
         && make \
         && make install
 
+# https://dri.freedesktop.org/libdrm/
 ARG LIBDRM
 RUN \
     echo "**** grabbing libdrm ****" \
         && if uname -m | grep -q x86; then \
             mkdir -p /tmp/libdrm \
             && curl -Lf \
-                https://dri.freedesktop.org/libdrm/libdrm-${LIBDRM}.tar.gz | \
-                tar -zx --strip-components=1 -C /tmp/libdrm; \ 
+                https://dri.freedesktop.org/libdrm/libdrm-${LIBDRM}.tar.xz -o /tmp/libdrm-${LIBDRM}.tar.xz \
+            && tar xf /tmp/libdrm-${LIBDRM}.tar.xz --strip-components=1 -C /tmp/libdrm; \ 
         else \
             echo "Arch does not support x86 runtime packages. Ignoring"; \
         fi
@@ -249,11 +251,8 @@ RUN \
     echo "**** compiling libdrm ****" \
         && if uname -m | grep -q x86; then \
             cd /tmp/libdrm \
-            && ./configure \
-                    --disable-static \
-                    --enable-shared \
-            && make \
-            && make install; \ 
+            && meson builddir/ \
+            && ninja -vC builddir/ install; \ 
         else \
             echo "Arch does not support x86 runtime packages. Ignoring"; \
         fi
@@ -283,13 +282,14 @@ RUN \
             echo "Arch does not support x86 runtime packages. Ignoring"; \
         fi
 
+# https://gitlab.freedesktop.org/vdpau/libvdpau/-/tree/1.4
 ARG LIBVDPAU
 RUN \
     echo "**** grabbing libvdpau ****" \
         && if uname -m | grep -q x86; then \
             mkdir -p /tmp/libvdpau \
             && git clone \
-                --branch libvdpau-${LIBVDPAU} \
+                --branch ${LIBVDPAU} \
                 --depth 1 https://gitlab.freedesktop.org/vdpau/libvdpau.git \
                 /tmp/libvdpau; \ 
         else \
@@ -309,6 +309,7 @@ RUN \
             echo "Arch does not support x86 runtime packages. Ignoring"; \
         fi
 
+# https://github.com/Netflix/vmaf/releases
 ARG LIBVMAF
 RUN \
     echo "**** grabbing vmaf ****" \
@@ -332,6 +333,7 @@ RUN \
             echo "Arch does not support x86 runtime packages. Ignoring"; \
         fi
 
+# https://ftp.osuosl.org/pub/xiph/releases/ogg/?C=M;O=D
 ARG OGG
 RUN \
     echo "**** grabbing ogg ****" \
@@ -348,6 +350,7 @@ RUN \
         && make \
         && make install
 
+# https://sourceforge.net/projects/opencore-amr/files/opencore-amr/
 ARG OPENCOREAMR
 RUN \
     echo "**** grabbing opencore-amr ****" \
@@ -364,6 +367,7 @@ RUN \
         && make \
         && make install
 
+# https://github.com/uclouvain/openjpeg/releases
 ARG OPENJPEG
 RUN \
     echo "**** grabbing openjpeg ****" \
@@ -385,6 +389,7 @@ RUN \
         && make \
         && make install
 
+# https://archive.mozilla.org/pub/opus/
 ARG OPUS
 RUN \
     echo "**** grabbing opus ****" \
@@ -402,6 +407,7 @@ RUN \
         && make \
         && make install
 
+# https://ftp.osuosl.org/pub/xiph/releases/theora/
 ARG THEORA
 RUN \
     echo "**** grabbing theora ****" \
@@ -428,6 +434,7 @@ RUN \
         && make \
         && make install
 
+# https://github.com/georgmartius/vid.stab/releases
 ARG LIBVIDSTAB
 RUN \
     echo "**** grabbing vid.stab ****" \
@@ -452,6 +459,7 @@ RUN \
             && make install; \
         fi
 
+# https://ftp.osuosl.org/pub/xiph/releases/vorbis/
 ARG VORBIS
 RUN \
     echo "**** grabbing vorbis ****" \
@@ -468,6 +476,7 @@ RUN \
         && make \
         && make install
 
+# https://github.com/webmproject/libvpx/releases
 ARG VPX
 RUN \
     echo "**** grabbing vpx ****" \
@@ -571,7 +580,6 @@ RUN \
             --enable-libass \
             --enable-libfdk_aac \
             --enable-libfreetype \
-            --enable-libkvazaar \
             --enable-libmp3lame \
             --enable-libopencore-amrnb \
             --enable-libopencore-amrwb \
@@ -593,7 +601,10 @@ RUN \
             --enable-version3 \
             ${ADDITIONAL_FFMPEG_ARGS} \
         && make
-# TODO:
+# TODO: Re-enable...
+## --enable-libkvazaar
+
+# TODO: Look into adding...
 ## --disable-indev=sndio 
 ## --disable-outdev=sndio 
 ## --cc=gcc 
@@ -629,9 +640,17 @@ RUN \
             | awk '/local/ {print $3}' \
             | xargs -i cp -L {} /buildout/usr/lib/ \
         && if uname -m | grep -q x86; then \
-            cp -a \
-                /usr/local/lib/libdrm_* \
-                /buildout/usr/lib/; \
+            if ls /usr/local/lib/libdrm_* 1> /dev/null 2>&1; then \
+                cp -a \
+                    /usr/local/lib/libdrm_* \
+                    /buildout/usr/lib/; \
+            fi \
+            && \
+            if ls /usr/local/lib/x86_64-linux-gnu/libdrm_* 1> /dev/null 2>&1; then \
+                cp -a \
+                    /usr/local/lib/x86_64-linux-gnu \
+                    /buildout/usr/lib/; \
+            fi \
         fi
 
 
