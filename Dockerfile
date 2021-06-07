@@ -444,7 +444,7 @@ RUN \
         && echo 'make install' > ./install-cmd.sh
 
 # https://github.com/uclouvain/openjpeg/releases
-FROM scratch as OPENCOPENJPEGOREAMR
+FROM scratch as OPENJPEG
 COPY --from=buildbase / /
 ARG OPENJPEG
 RUN \
