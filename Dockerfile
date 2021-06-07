@@ -930,7 +930,7 @@ RUN \
             --enable-libzimg \
             --enable-openssl \
             ${ADDITIONAL_FFMPEG_ARGS} \
-        && make
+        && make -j$(nproc)
 # TODO: Look into adding...
 ## --enable-frei0r
 ## --enable-gnutls
