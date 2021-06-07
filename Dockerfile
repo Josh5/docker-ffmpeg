@@ -59,14 +59,14 @@ RUN \
         fi
 
 # Compile 3rd party libs
-ARG AOM
+ARG LIBAOM
 RUN \
-    echo "**** grabbing aom ****" && \
-    mkdir -p /tmp/aom && \
-    git clone \
-        --branch ${AOM} \
-        --depth 1 https://aomedia.googlesource.com/aom \
-        /tmp/aom
+    echo "**** grabbing aom ****" \
+        && mkdir -p /tmp/aom \
+        && git clone \
+            --branch ${LIBAOM} \
+            --depth 1 https://aomedia.googlesource.com/aom \
+            /tmp/aom
 RUN \
     echo "**** compiling aom ****" \
         && cd /tmp/aom \
@@ -82,12 +82,12 @@ RUN \
         && make install
 
 # https://github.com/mstorsjo/fdk-aac/releases
-ARG FDKAAC
+ARG LIBFDKAAC
 RUN \
     echo "**** grabbing fdk-aac ****" \
         && mkdir -p /tmp/fdk-aac \
         && curl -Lf \
-            https://github.com/mstorsjo/fdk-aac/archive/v${FDKAAC}.tar.gz | \
+            https://github.com/mstorsjo/fdk-aac/archive/v${LIBFDKAAC}.tar.gz | \
             tar -zx --strip-components=1 -C /tmp/fdk-aac
 RUN \
     echo "**** compiling fdk-aac ****" \
@@ -160,12 +160,12 @@ RUN \
             echo "Arch does not support x86 runtime packages. Ignoring"; \
         fi
 
-ARG FRIBIDI
+ARG LIBFRIBIDI
 RUN \
     echo "**** grabbing fribidi ****" \
         && mkdir -p /tmp/fribidi \
         && curl -Lf \
-            https://github.com/fribidi/fribidi/archive/v${FRIBIDI}.tar.gz | \
+            https://github.com/fribidi/fribidi/archive/v${LIBFRIBIDI}.tar.gz | \
             tar -zx --strip-components=1 -C /tmp/fribidi
 RUN \
     echo "**** compiling fribidi ****" \
@@ -554,6 +554,130 @@ RUN \
         && make \
         && make install
 
+# https://www.nasm.us/pub/nasm/releasebuilds/
+ARG NASM
+RUN \
+    echo "**** grabbing nasm ****" \
+        && mkdir -p /tmp/nasm \
+        && curl -Lf \
+            https://www.nasm.us/pub/nasm/releasebuilds/${NASM}/nasm-${NASM}.tar.bz2 | \
+            tar -jx --strip-components=1 -C /tmp/nasm
+RUN \
+    echo "**** compiling nasm ****" \
+        && cd /tmp/nasm \
+        && ./autogen.sh \
+        && ./configure \
+            --disable-static \
+            --enable-shared \
+        && make \
+        && make install
+
+# https://code.videolan.org/videolan/dav1d
+ARG LIBDAV1D
+RUN \
+    echo "**** grabbing dav1d ****" \
+        && mkdir -p /tmp/dav1d \
+        && git clone \
+            --branch ${LIBDAV1D} \
+            --depth 1 https://code.videolan.org/videolan/dav1d.git \
+            /tmp/dav1d
+RUN \
+    echo "**** compiling dav1d ****" \
+        && cd /tmp/dav1d \
+        && mkdir -p build \
+        && cd build \
+        && meson --bindir="/usr/local/bin" .. \
+        && ninja \
+        && ninja install
+
+# https://github.com/sekrit-twc/zimg/
+ARG ZIMG
+RUN \
+    echo "**** grabbing zimg ****" \
+        && mkdir -p /tmp/zimg \
+        && curl -Lf \
+            https://github.com/sekrit-twc/zimg/archive/refs/tags/release-${ZIMG}.tar.gz | \
+            tar -zx --strip-components=1 -C /tmp/zimg
+RUN \
+    echo "**** compiling zimg ****" \
+        && cd /tmp/zimg \
+        && ./autogen.sh \
+        && ./configure \
+            --disable-static \
+            --enable-shared \
+        && make \
+        && make install
+
+# https://sourceforge.net/projects/soxr
+ARG SOXR
+RUN \
+    echo "**** grabbing soxr ****" \
+        && mkdir -p /tmp/soxr \
+        && curl -Lf \
+            https://downloads.sourceforge.net/project/soxr/soxr-${SOXR}-Source.tar.xz -o /tmp/soxr-${SOXR}-Source.tar.xz \
+        && rm -rfv /tmp/soxr/* \
+        && tar xf /tmp/soxr-${SOXR}-Source.tar.xz --strip-components=1 -C /tmp/soxr
+RUN \
+    echo "**** compiling soxr ****" \
+        && cd /tmp/soxr \
+        && mkdir -p ./build \
+        && cd ./build \
+        && cmake -G "Unix Makefiles" -DWITH_OPENMP:bool=off -DBUILD_TESTS:bool=off -DCMAKE_BUILD_TYPE=Release .. \
+        && make \
+        && make install
+
+# https://github.com/xiph/speex/
+ARG SPEEX
+RUN \
+    echo "**** grabbing speex ****" \
+        && mkdir -p /tmp/speex \
+        && curl -Lf \
+            https://github.com/xiph/speex/archive/refs/tags/Speex-${SPEEX}.tar.gz | \
+            tar -zx --strip-components=1 -C /tmp/speex
+RUN \
+    echo "**** compiling speex ****" \
+        && cd /tmp/speex \
+        && ./autogen.sh \
+        && ./configure \
+            --disable-static \
+            --enable-shared \
+        && make \
+        && make install
+
+# https://sourceforge.net/projects/opencore-amr/files/vo-amrwbenc/
+ARG LIBVOAMRWBENC
+RUN \
+    echo "**** grabbing vo-amrwbenc ****" \
+        && mkdir -p /tmp/vo-amrwbenc \
+        && curl -Lf \
+            http://downloads.sourceforge.net/opencore-amr/vo-amrwbenc/vo-amrwbenc-${LIBVOAMRWBENC}.tar.gz | \
+            tar -zx --strip-components=1 -C /tmp/vo-amrwbenc
+RUN \
+    echo "**** compiling vo-amrwbenc ****" \
+        && cd /tmp/vo-amrwbenc \
+        && ./configure \
+        && make \
+        && make install
+
+# https://chromium.googlesource.com/webm/libwebp.git
+ARG LIBWEBP
+RUN \
+    echo "**** grabbing libwebp ****" \
+        && mkdir -p /tmp/libwebp \
+        && git clone \
+            --branch ${LIBWEBP} \
+            --depth 1 https://chromium.googlesource.com/webm/libwebp.git \
+            /tmp/libwebp
+RUN \
+    echo "**** compiling libwebp ****" \
+        && cd /tmp/libwebp \
+        && ./autogen.sh \
+        && ./configure \
+            --disable-static \
+            --enable-shared \
+        && make \
+        && make install
+
 # Main ffmpeg build
 ARG FFMPEG_VERSION
 RUN \
@@ -570,60 +694,59 @@ RUN \
         fi \
         && cd /tmp/ffmpeg \
         && ./configure \
+            --enable-gpl \
+            --enable-nonfree \
+            --enable-version3 \
             --disable-debug \
             --disable-doc \
             --disable-ffplay \
-            --enable-ffprobe \
+            --disable-indev=sndio \
+            --disable-outdev=sndio \
+            --cc=gcc \
             --enable-avresample \
-            --enable-gpl \
+            --enable-ffprobe \
+            --enable-fontconfig \
+            --enable-gray \
             --enable-libaom \
             --enable-libass \
+            --enable-libdav1d \
             --enable-libfdk_aac \
             --enable-libfreetype \
+            --enable-libfribidi \
             --enable-libmp3lame \
             --enable-libopencore-amrnb \
             --enable-libopencore-amrwb \
             --enable-libopenjpeg \
             --enable-libopus \
+            --enable-libsoxr \
+            --enable-libspeex \
             --enable-libtheora \
             --enable-libv4l2 \
             --enable-libvidstab \
+            --enable-libvmaf \
+            --enable-libvo-amrwbenc \
             --enable-libvorbis \
             --enable-libvpx \
-            --enable-libxml2 \
+            --enable-libwebp \
             --enable-libx264 \
             --enable-libx265 \
+            --enable-libxml2 \
             --enable-libxvid \
-            --enable-nonfree \
+            --enable-libzimg \
             --enable-openssl \
-            --enable-small \
-            --enable-stripping \
-            --enable-version3 \
             ${ADDITIONAL_FFMPEG_ARGS} \
         && make
 # TODO: Re-enable...
 ## --enable-libkvazaar
 
 # TODO: Look into adding...
-## --disable-indev=sndio 
-## --disable-outdev=sndio 
-## --cc=gcc 
-## --enable-fontconfig
-## --enable-frei0r 
-## --enable-gnutls 
-## --enable-gmp 
-## --enable-libgme 
-## --enable-gray 
-## --enable-libfribidi 
-## --enable-librubberband 
-## --enable-libsoxr 
-## --enable-libspeex 
-## --enable-libsrt 
-## --enable-libvo-amrwbenc 
-## --enable-libwebp 
-## --enable-libdav1d 
-## --enable-libzvbi 
-## --enable-libzimg
+## --enable-frei0r
+## --enable-gnutls
+## --enable-gmp
+## --enable-libgme
+## --enable-librubberband
+## --enable-libsrt
+## --enable-libzvbi
 
 RUN \
     echo "**** arrange files ****" \

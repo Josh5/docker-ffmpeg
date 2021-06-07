@@ -82,30 +82,37 @@ jobs:
         # Read versions from file
         . ./versions.cfg
         echo ::set-output name=docker_FFMPEG_VERSION::${FFMPEG_VERSION}
-        echo ::set-output name=docker_AOM::${AOM}
-        echo ::set-output name=docker_FDKAAC::${FDKAAC}
         echo ::set-output name=docker_FONTCONFIG::${FONTCONFIG}
-        echo ::set-output name=docker_FREETYPE::${FREETYPE}
-        echo ::set-output name=docker_FRIBIDI::${FRIBIDI}
         echo ::set-output name=docker_KVAZAAR::${KVAZAAR}
         echo ::set-output name=docker_LAME::${LAME}
+        echo ::set-output name=docker_LIBAOM::${LIBAOM}
         echo ::set-output name=docker_LIBASS::${LIBASS}
+        echo ::set-output name=docker_LIBDAV1D::${LIBDAV1D}
         echo ::set-output name=docker_LIBDRM::${LIBDRM}
+        echo ::set-output name=docker_LIBFDKAAC::${LIBFDKAAC}
+        echo ::set-output name=docker_LIBFREETYPE::${LIBFREETYPE}
+        echo ::set-output name=docker_LIBFRIBIDI::${LIBFRIBIDI}
         echo ::set-output name=docker_LIBVA::${LIBVA}
         echo ::set-output name=docker_LIBVDPAU::${LIBVDPAU}
         echo ::set-output name=docker_LIBVIDSTAB::${LIBVIDSTAB}
         echo ::set-output name=docker_LIBVMAF::${LIBVMAF}
+        echo ::set-output name=docker_LIBVOAMRWBENC::${LIBVOAMRWBENC}
+        echo ::set-output name=docker_LIBWEBP::${LIBWEBP}
+        echo ::set-output name=docker_NASM::${NASM}
         echo ::set-output name=docker_NVCODEC::${NVCODEC}
         echo ::set-output name=docker_OGG::${OGG}
         echo ::set-output name=docker_OPENCOREAMR::${OPENCOREAMR}
         echo ::set-output name=docker_OPENJPEG::${OPENJPEG}
         echo ::set-output name=docker_OPUS::${OPUS}
+        echo ::set-output name=docker_SOXR::${SOXR}
+        echo ::set-output name=docker_SPEEX::${SPEEX}
         echo ::set-output name=docker_THEORA::${THEORA}
         echo ::set-output name=docker_VORBIS::${VORBIS}
         echo ::set-output name=docker_VPX::${VPX}
         echo ::set-output name=docker_x264::${x264}
         echo ::set-output name=docker_X265::${X265}
         echo ::set-output name=docker_XVID::${XVID}
+        echo ::set-output name=docker_ZIMG::${ZIMG}
 
     # Cache the build
     - name: Cache Docker layers
@@ -135,30 +142,38 @@ jobs:
         build-args: |
           BUILD_DATE=${{ steps.prepare.outputs.docker_build_date }}
           FFMPEG_VERSION=${{ steps.prepare.outputs.docker_FFMPEG_VERSION }}
-          AOM=${{ steps.prepare.outputs.docker_AOM }}
-          FDKAAC=${{ steps.prepare.outputs.docker_FDKAAC }}
           FONTCONFIG=${{ steps.prepare.outputs.docker_FONTCONFIG }}
-          FREETYPE=${{ steps.prepare.outputs.docker_FREETYPE }}
-          FRIBIDI=${{ steps.prepare.outputs.docker_FRIBIDI }}
           KVAZAAR=${{ steps.prepare.outputs.docker_KVAZAAR }}
           LAME=${{ steps.prepare.outputs.docker_LAME }}
+          LIBAOM=${{ steps.prepare.outputs.docker_LIBAOM }}
           LIBASS=${{ steps.prepare.outputs.docker_LIBASS }}
+          LIBDAV1D=${{ steps.prepare.outputs.docker_LIBDAV1D }}
           LIBDRM=${{ steps.prepare.outputs.docker_LIBDRM }}
+          LIBFDKAAC=${{ steps.prepare.outputs.docker_LIBFDKAAC }}
+          LIBFREETYPE=${{ steps.prepare.outputs.docker_LIBFREETYPE }}
+          LIBFRIBIDI=${{ steps.prepare.outputs.docker_LIBFRIBIDI }}
           LIBVA=${{ steps.prepare.outputs.docker_LIBVA }}
           LIBVDPAU=${{ steps.prepare.outputs.docker_LIBVDPAU }}
           LIBVIDSTAB=${{ steps.prepare.outputs.docker_LIBVIDSTAB }}
           LIBVMAF=${{ steps.prepare.outputs.docker_LIBVMAF }}
+          LIBVOAMRWBENC=${{ steps.prepare.outputs.docker_LIBVOAMRWBENC }}
+          LIBWEBP=${{ steps.prepare.outputs.docker_LIBWEBP }}
+          NASM=${{ steps.prepare.outputs.docker_NASM }}
           NVCODEC=${{ steps.prepare.outputs.docker_NVCODEC }}
           OGG=${{ steps.prepare.outputs.docker_OGG }}
           OPENCOREAMR=${{ steps.prepare.outputs.docker_OPENCOREAMR }}
           OPENJPEG=${{ steps.prepare.outputs.docker_OPENJPEG }}
           OPUS=${{ steps.prepare.outputs.docker_OPUS }}
+          SOXR=${{ steps.prepare.outputs.docker_SOXR }}
+          SPEEX=${{ steps.prepare.outputs.docker_SPEEX }}
           THEORA=${{ steps.prepare.outputs.docker_THEORA }}
           VORBIS=${{ steps.prepare.outputs.docker_VORBIS }}
           VPX=${{ steps.prepare.outputs.docker_VPX }}
           x264=${{ steps.prepare.outputs.docker_x264 }}
           X265=${{ steps.prepare.outputs.docker_X265 }}
           XVID=${{ steps.prepare.outputs.docker_XVID }}
+          ZIMG=${{ steps.prepare.outputs.docker_ZIMG }}
+
         platforms: ${{ steps.prepare.outputs.docker_platforms }}
         push: ${{ steps.prepare.outputs.docker_push }}
         tags: |
