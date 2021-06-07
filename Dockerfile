@@ -676,6 +676,7 @@ RUN \
 # https://code.videolan.org/videolan/dav1d
 FROM scratch as LIBDAV1D
 COPY --from=buildbase / /
+COPY --from=NASM /tmp/nasm /tmp/nasm
 ARG LIBDAV1D
 RUN \
     echo "**** grabbing dav1d ****" \
@@ -685,6 +686,14 @@ RUN \
             --depth 1 https://code.videolan.org/videolan/dav1d.git \
             /tmp/dav1d
 RUN \
+    echo "**** pre-installing nasm ****" \
+        && cd /tmp/nasm \
+        && . ./install-cmd.sh \
+    && \
+    echo "**** cleanup pre-install ****" \
+        && cd / \
+        && rm -rf /tmp/nasm \
+    && \
     echo "**** compiling dav1d ****" \
         && cd /tmp/dav1d \
         && mkdir -p build \
