@@ -5,7 +5,7 @@
 # File Created: Saturday, 5th June 2021 1:08:20 am
 # Author: Josh.5 (jsunnex@gmail.com)
 # -----
-# Last Modified: Monday, 7th June 2021 6:13:25 pm
+# Last Modified: Monday, 7th June 2021 6:57:01 pm
 # Modified By: Josh.5 (jsunnex@gmail.com)
 ###
 
@@ -13,7 +13,7 @@ source $(dirname ${BASH_SOURCE[0]})/versions.cfg
 
 BUILD_DATE=$(date '+%Y-%m-%dT%H:%M:%S%:z')
 
-docker build \
+docker buildx build \
     --build-arg VERSION=bin \
     --build-arg FFMPEG_VERSION=${FFMPEG_VERSION} \
     --build-arg BUILD_DATE=${BUILD_DATE} \
@@ -49,4 +49,9 @@ docker build \
     --build-arg X265=${X265} \
     --build-arg XVID=${XVID} \
     --build-arg ZIMG=${ZIMG} \
-    -t josh5/ffmpeg:latest .
+    --tag josh5/ffmpeg:latest \
+    --platform linux/amd64 \
+    --iidfile /tmp/docker-build-push-D4bGPh/iidfile \
+    --cache-from type=local,src=/tmp/.buildx-cache \
+    --cache-to type=local,dest=/tmp/.buildx-cache \
+    --file Dockerfile .

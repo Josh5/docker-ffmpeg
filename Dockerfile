@@ -5,7 +5,13 @@ ENV \
  DEBIAN_FRONTEND="noninteractive" \
  MAKEFLAGS="-j4"
 
-# Build deps
+#  ____        _ _     _       _                
+# | __ ) _   _(_) | __| |   __| | ___ _ __  ___ 
+# |  _ \| | | | | |/ _` |  / _` |/ _ \ '_ \/ __|
+# | |_) | |_| | | | (_| | | (_| |  __/ |_) \__ \
+# |____/ \__,_|_|_|\__,_|  \__,_|\___| .__/|___/
+#                                    |_|        
+# 
 RUN \
     echo "**** install build packages ****" \
     && apt-get update \ 
@@ -57,7 +63,13 @@ RUN \
             echo "Arch does not support x86 runtime packages. Ignoring"; \
         fi
 
-# Compile 3rd party libs
+#  _____         _                    _           _ _ _         
+# |___ / _ __ __| |  _ __   __ _ _ __| |_ _   _  | (_) |__  ___ 
+#   |_ \| '__/ _` | | '_ \ / _` | '__| __| | | | | | | '_ \/ __|
+#  ___) | | | (_| | | |_) | (_| | |  | |_| |_| | | | | |_) \__ \
+# |____/|_|  \__,_| | .__/ \__,_|_|   \__|\__, | |_|_|_.__/|___/
+#                   |_|                   |___/                 
+#
 FROM scratch as LIBAOM
 COPY --from=buildbase / /
 ARG LIBAOM
@@ -80,7 +92,7 @@ RUN \
         && cmake \
             -DBUILD_STATIC_LIBS=0 .. \
         && make -j$(nproc) \
-        && echo 'make install' > ./install-cmd.sh
+        && echo 'cd /tmp/aom/aom_build && make install' > /tmp/aom/install-cmd.sh
 
 # https://github.com/mstorsjo/fdk-aac/releases
 FROM scratch as LIBFDKAAC
@@ -400,7 +412,7 @@ RUN \
             cd /tmp/vmaf/libvmaf \
             && meson build --buildtype release \
             && ninja -vC build \
-            && echo 'ninja -vC build/ install' > ./install-cmd.sh; \ 
+            && echo 'cd /tmp/vmaf/libvmaf && ninja -vC build/ install' > /tmp/vmaf/install-cmd.sh; \ 
         else \
             echo "Arch does not support x86 runtime packages. Ignoring"; \
         fi
@@ -575,7 +587,7 @@ RUN \
             && cmake \
                 -DBUILD_STATIC_LIBS=0 . \
             && make -j$(nproc) \
-            && make install; \ 
+            && echo 'make install' > ./install-cmd.sh; \ 
         else \
             cd /tmp/vid.stab \
             && echo "" > \
@@ -640,21 +652,23 @@ RUN \
     echo "**** grabbing x265 ****" \
         && mkdir -p /tmp/x265 \
         && curl -Lf \
-            http://anduin.linuxfromscratch.org/BLFS/x265/x265_${X265}.tar.gz | \
+            https://github.com/videolan/x265/archive/Release_${X265}.tar.gz | \
             tar -zx --strip-components=1 -C /tmp/x265
 RUN \
     echo "**** compiling x265 ****" \
         && if uname -m | grep -q x86; then \
             cd /tmp/x265/build/linux \
+            && export MAKEFLAGS="-j$(nproc) " \
             && ./multilib.sh \
-            && make -C 8bit \
-            && echo 'make -C 8bit install' > ./install-cmd.sh; \ 
+            && echo 'cd /tmp/x265/build/linux && make -C 8bit install' > /tmp/x265/install-cmd.sh \
+            && echo; \ 
         else \
             cd /tmp/x265/build/linux \
             && export CXXFLAGS="-fPIC" \
+            && export MAKEFLAGS="-j$(nproc) " \
             && ./multilib.sh \
-            && make -C 8bit \
-            && echo 'make -C 8bit install' > ./install-cmd.sh; \ 
+            && echo 'cd /tmp/x265/build/linux && make -C 8bit install' > /tmp/x265/install-cmd.sh \
+            && echo; \ 
         fi
 
 FROM scratch as XVID
@@ -700,7 +714,7 @@ RUN \
         && cd build \
         && meson --bindir="/usr/local/bin" .. \
         && ninja \
-        && echo 'ninja install' > ./install-cmd.sh
+        && echo 'cd /tmp/dav1d/build && ninja install' > /tmp/dav1d/install-cmd.sh
 
 # https://github.com/sekrit-twc/zimg/
 FROM scratch as ZIMG
@@ -738,9 +752,9 @@ RUN \
         && cd /tmp/soxr \
         && mkdir -p ./build \
         && cd ./build \
-        && cmake -G "Unix Makefiles" -DWITH_OPENMP:bool=off -DBUILD_TESTS:bool=off -DCMAKE_BUILD_TYPE=Release .. \
+        && cmake -G "Unix Makefiles" -DBUILD_STATIC_LIBS=0 -DWITH_OPENMP:bool=off -DBUILD_TESTS:bool=off -DCMAKE_BUILD_TYPE=Release .. \
         && make -j$(nproc) \
-        && echo 'make install' > ./install-cmd.sh
+        && echo 'cd /tmp/soxr/build && make install' > /tmp/soxr/install-cmd.sh
 
 # https://github.com/xiph/speex/
 FROM scratch as SPEEX
@@ -800,8 +814,26 @@ RUN \
         && make -j$(nproc) \
         && echo 'make install' > ./install-cmd.sh
 
+
+#  _____ _____ __  __ ____  _____ ____ 
+# |  ___|  ___|  \/  |  _ \| ____/ ___|
+# | |_  | |_  | |\/| | |_) |  _|| |  _ 
+# |  _| |  _| | |  | |  __/| |__| |_| |
+# |_|   |_|   |_|  |_|_|   |_____\____|
+#                                      
+#
 FROM scratch as FFMPEG
+ARG FFMPEG_VERSION
 COPY --from=buildbase / /
+# Download FFmpeg
+RUN \
+    echo "**** grabbing ffmpeg ****" \
+        && mkdir -p /ffmpeg \
+        && echo "https://ffmpeg.org/releases/ffmpeg-${FFMPEG_VERSION}.tar.bz2" \
+        && curl -Lf \
+            https://ffmpeg.org/releases/ffmpeg-${FFMPEG_VERSION}.tar.bz2 | \
+            tar -jx --strip-components=1 -C /ffmpeg
+# Install all 3rd party libs
 COPY --from=FONTCONFIG     /tmp   /tmp
 COPY --from=KVAZAAR        /tmp   /tmp
 COPY --from=LAME           /tmp   /tmp
@@ -837,30 +869,24 @@ RUN \
     echo "**** installing all ffmpeg deps ****" \
         && for d in /tmp/*; do \
             if [ -d "${d}" ]; then \
-                if [ -e "${d}/install-cmd.sh" ]; then \
-                    echo \
-                    && echo \
-                    && echo "  - Running installation from commands in ${d}/install-cmd.sh" \
-                    && cd ${d} \
-                    && . ./install-cmd.sh \
-                    && echo "DONE"; \
+                if ! ls -la "${d}/install-cmd.sh"; then \
+                    exit 1; \
                 fi \
+                && echo "  - Running installation from commands in ${d}" \
+                && ls -la "${d}/install-cmd.sh" \
+                && echo \
+                && cd ${d} \
+                && . ./install-cmd.sh \
+                && echo; \
             fi \
         done
-ARG FFMPEG_VERSION
-RUN \
-    echo "**** grabbing ffmpeg ****" \
-        && mkdir -p /tmp/ffmpeg \
-        && echo "https://ffmpeg.org/releases/ffmpeg-${FFMPEG_VERSION}.tar.bz2" \
-        && curl -Lf \
-            https://ffmpeg.org/releases/ffmpeg-${FFMPEG_VERSION}.tar.bz2 | \
-            tar -jx --strip-components=1 -C /tmp/ffmpeg
+# Compile FFmpeg
 RUN \
     echo "**** compiling ffmpeg ****" \
         && if uname -m | grep -q x86; then \
             ADDITIONAL_FFMPEG_ARGS='--enable-cuvid --enable-libvmaf --enable-nvdec --enable-nvenc --enable-vaapi --enable-vdpau'; \ 
         fi \
-        && cd /tmp/ffmpeg \
+        && cd /ffmpeg \
         && ./configure \
             --enable-gpl \
             --enable-nonfree \
@@ -916,18 +942,19 @@ RUN \
 ## --enable-libsrt
 ## --enable-libzvbi
 
+# Install FFmpeg and all libs to /buildout directroy
 RUN \
     echo "**** arrange files ****" \
         && ldconfig \
         && mkdir -p /buildout/usr/local/bin \
         && cp \
-            /tmp/ffmpeg/ffmpeg \
+            /ffmpeg/ffmpeg \
             /buildout/usr/local/bin \
         && cp \
-            /tmp/ffmpeg/ffprobe \
+            /ffmpeg/ffprobe \
             /buildout/usr/local/bin \
         && mkdir -p /buildout/usr/lib \
-        && ldd /tmp/ffmpeg/ffmpeg \
+        && ldd /ffmpeg/ffmpeg \
             | awk '/local/ {print $3}' \
             | xargs -i cp -L {} /buildout/usr/lib/ \
         && if uname -m | grep -q x86; then \
@@ -945,7 +972,14 @@ RUN \
         fi
 
 
-# Storage layer consumed downstream
+#  _____                       _   
+# | ____|_  ___ __   ___  _ __| |_ 
+# |  _| \ \/ / '_ \ / _ \| '__| __|
+# | |___ >  <| |_) | (_) | |  | |_ 
+# |_____/_/\_\ .__/ \___/|_|   \__|
+#            |_|                   
+# 
+# Export the storage layer consumed downstream
 FROM scratch
 
 # Set version label
