@@ -81,7 +81,7 @@ jobs:
         echo ::set-output name=docker_THEORA::${THEORA}
         echo ::set-output name=docker_VORBIS::${VORBIS}
         echo ::set-output name=docker_VPX::${VPX}
-        echo ::set-output name=docker_x264::${x264}
+        echo ::set-output name=docker_X264::${X264}
         echo ::set-output name=docker_X265::${X265}
         echo ::set-output name=docker_XVID::${XVID}
         echo ::set-output name=docker_ZIMG::${ZIMG}
@@ -164,7 +164,7 @@ jobs:
           THEORA=${{ steps.prepare.outputs.docker_THEORA }}
           VORBIS=${{ steps.prepare.outputs.docker_VORBIS }}
           VPX=${{ steps.prepare.outputs.docker_VPX }}
-          x264=${{ steps.prepare.outputs.docker_x264 }}
+          X264=${{ steps.prepare.outputs.docker_X264 }}
           X265=${{ steps.prepare.outputs.docker_X265 }}
           XVID=${{ steps.prepare.outputs.docker_XVID }}
           ZIMG=${{ steps.prepare.outputs.docker_ZIMG }}

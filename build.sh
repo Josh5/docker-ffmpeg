@@ -5,7 +5,7 @@
 # File Created: Saturday, 5th June 2021 1:08:20 am
 # Author: Josh.5 (jsunnex@gmail.com)
 # -----
-# Last Modified: Monday, 7th June 2021 3:03:29 pm
+# Last Modified: Monday, 7th June 2021 6:13:25 pm
 # Modified By: Josh.5 (jsunnex@gmail.com)
 ###
 
@@ -13,7 +13,7 @@ source $(dirname ${BASH_SOURCE[0]})/versions.cfg
 
 BUILD_DATE=$(date '+%Y-%m-%dT%H:%M:%S%:z')
 
-docker build --pull \
+docker build \
     --build-arg VERSION=bin \
     --build-arg FFMPEG_VERSION=${FFMPEG_VERSION} \
     --build-arg BUILD_DATE=${BUILD_DATE} \
@@ -45,7 +45,7 @@ docker build --pull \
     --build-arg THEORA=${THEORA} \
     --build-arg VORBIS=${VORBIS} \
     --build-arg VPX=${VPX} \
-    --build-arg x264=${x264} \
+    --build-arg X264=${X264} \
     --build-arg X265=${X265} \
     --build-arg XVID=${XVID} \
     --build-arg ZIMG=${ZIMG} \

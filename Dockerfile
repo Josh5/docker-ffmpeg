@@ -1,5 +1,4 @@
-FROM lsiobase/ubuntu:bionic as buildstage
-
+FROM ubuntu:bionic as buildbase
 
 # Common env
 ENV \
@@ -59,6 +58,8 @@ RUN \
         fi
 
 # Compile 3rd party libs
+FROM scratch as LIBAOM
+COPY --from=buildbase / /
 ARG LIBAOM
 RUN \
     echo "**** grabbing aom ****" \
@@ -78,10 +79,12 @@ RUN \
         && cd aom_build \
         && cmake \
             -DBUILD_STATIC_LIBS=0 .. \
-        && make \
-        && make install
+        && make -j$(nproc) \
+        && echo 'make install' > ./install-cmd.sh
 
 # https://github.com/mstorsjo/fdk-aac/releases
+FROM scratch as LIBFDKAAC
+COPY --from=buildbase / /
 ARG LIBFDKAAC
 RUN \
     echo "**** grabbing fdk-aac ****" \
@@ -96,9 +99,11 @@ RUN \
         && ./configure \
             --disable-static \
             --enable-shared \
-        && make \
-        && make install
+        && make -j$(nproc) \
+        && echo 'make install' > ./install-cmd.sh
 
+FROM scratch as NVCODEC
+COPY --from=buildbase / /
 ARG NVCODEC
 RUN \
     echo "**** grabbing ffnvcodec ****" \
@@ -115,11 +120,14 @@ RUN \
     echo "**** compiling ffnvcodec ****" \
         && if uname -m | grep -q x86; then \
             cd /tmp/ffnvcodec \
-            && make install; \ 
+            && make -j$(nproc) \
+            && echo 'make install' > ./install-cmd.sh; \ 
         else \
             echo "Arch does not support x86 runtime packages. Ignoring"; \
         fi
 
+FROM scratch as LIBFREETYPE
+COPY --from=buildbase / /
 ARG LIBFREETYPE
 RUN \
     echo "**** grabbing freetype ****" \
@@ -133,9 +141,11 @@ RUN \
         && ./configure \
             --disable-static \
             --enable-shared \
-        && make \
-        && make install
+        && make -j$(nproc) \
+        && echo 'make install' > ./install-cmd.sh
 
+FROM scratch as FONTCONFIG
+COPY --from=buildbase / /
 ARG FONTCONFIG
 RUN \
     echo "**** grabbing fontconfig ****" \
@@ -154,12 +164,14 @@ RUN \
             && ./configure \
                 --disable-static \
                 --enable-shared \
-            && make \
-            && make install; \ 
+            && make -j$(nproc) \
+            && echo 'make install' > ./install-cmd.sh; \
         else \
             echo "Arch does not support x86 runtime packages. Ignoring"; \
         fi
 
+FROM scratch as LIBFRIBIDI
+COPY --from=buildbase / /
 ARG LIBFRIBIDI
 RUN \
     echo "**** grabbing fribidi ****" \
@@ -175,8 +187,10 @@ RUN \
             --disable-static \
             --enable-shared \
         && make -j 1 \
-        && make install
+        && echo 'make install' > ./install-cmd.sh
 
+FROM scratch as KVAZAAR
+COPY --from=buildbase / /
 ARG KVAZAAR
 RUN \
     echo "**** grabbing kvazaar ****" \
@@ -191,9 +205,11 @@ RUN \
         && ./configure \
             --disable-static \
             --enable-shared \
-        && make \
-        && make install
+        && make -j$(nproc) \
+        && echo 'make install' > ./install-cmd.sh
 
+FROM scratch as LAME
+COPY --from=buildbase / /
 ARG LAME
 RUN \
     echo "**** grabbing lame ****" \
@@ -215,9 +231,13 @@ RUN \
             --disable-static \
             --enable-nasm \
             --enable-shared \
-        && make \
-        && make install
+        && make -j$(nproc) \
+        && echo 'make install' > ./install-cmd.sh
 
+FROM scratch as LIBASS
+COPY --from=buildbase / /
+COPY --from=FONTCONFIG /tmp/fontconfig /tmp/fontconfig
+COPY --from=LIBFRIBIDI /tmp/fribidi /tmp/fribidi
 ARG LIBASS
 RUN \
     echo "**** grabbing libass ****" \
@@ -226,16 +246,31 @@ RUN \
             https://github.com/libass/libass/archive/${LIBASS}.tar.gz | \
             tar -zx --strip-components=1 -C /tmp/libass
 RUN \
+    echo "**** pre-installing fontconfig ****" \
+        && cd /tmp/fontconfig \
+        && . ./install-cmd.sh \
+    && \
+    echo "**** pre-installing fribidi ****" \
+        && cd /tmp/fribidi \
+        && . ./install-cmd.sh \
+    && \
+    echo "**** cleanup pre-install ****" \
+        && cd / \
+        && rm -rf /tmp/fontconfig \
+        && rm -rf /tmp/fribidi  \
+    && \
     echo "**** compiling libass ****" \
         && cd /tmp/libass \
         && ./autogen.sh \
         && ./configure \
             --disable-static \
             --enable-shared \
-        && make \
-        && make install
+        && make -j$(nproc) \
+        && echo 'make install' > ./install-cmd.sh
 
 # https://dri.freedesktop.org/libdrm/
+FROM scratch as LIBDRM
+COPY --from=buildbase / /
 ARG LIBDRM
 RUN \
     echo "**** grabbing libdrm ****" \
@@ -243,7 +278,8 @@ RUN \
             mkdir -p /tmp/libdrm \
             && curl -Lf \
                 https://dri.freedesktop.org/libdrm/libdrm-${LIBDRM}.tar.xz -o /tmp/libdrm-${LIBDRM}.tar.xz \
-            && tar xf /tmp/libdrm-${LIBDRM}.tar.xz --strip-components=1 -C /tmp/libdrm; \ 
+            && tar xf /tmp/libdrm-${LIBDRM}.tar.xz --strip-components=1 -C /tmp/libdrm \ 
+            && rm /tmp/libdrm-${LIBDRM}.tar.xz; \ 
         else \
             echo "Arch does not support x86 runtime packages. Ignoring"; \
         fi
@@ -252,11 +288,14 @@ RUN \
         && if uname -m | grep -q x86; then \
             cd /tmp/libdrm \
             && meson builddir/ \
-            && ninja -vC builddir/ install; \ 
+            && ninja -vC builddir/ \
+            && echo 'ninja -vC builddir/ install' > ./install-cmd.sh; \ 
         else \
             echo "Arch does not support x86 runtime packages. Ignoring"; \
         fi
 
+FROM scratch as LIBVA
+COPY --from=buildbase / /
 ARG LIBVA
 RUN \
     echo "**** grabbing libva ****" \
@@ -276,13 +315,15 @@ RUN \
             && ./configure \
                 --disable-static \
                 --enable-shared \
-            && make \
-            && make install; \ 
+            && make -j$(nproc) \
+            && echo 'make install' > ./install-cmd.sh; \ 
         else \
             echo "Arch does not support x86 runtime packages. Ignoring"; \
         fi
 
 # https://gitlab.freedesktop.org/vdpau/libvdpau/-/tree/1.4
+FROM scratch as LIBVDPAU
+COPY --from=buildbase / /
 ARG LIBVDPAU
 RUN \
     echo "**** grabbing libvdpau ****" \
@@ -303,13 +344,36 @@ RUN \
             && ./configure \
                 --disable-static \
                 --enable-shared \
-            && make \
-            && make install; \ 
+            && make -j$(nproc) \
+            && echo 'make install' > ./install-cmd.sh; \ 
         else \
             echo "Arch does not support x86 runtime packages. Ignoring"; \
         fi
 
+# https://www.nasm.us/pub/nasm/releasebuilds/
+FROM scratch as NASM
+COPY --from=buildbase / /
+ARG NASM
+RUN \
+    echo "**** grabbing nasm ****" \
+        && mkdir -p /tmp/nasm \
+        && curl -Lf \
+            https://www.nasm.us/pub/nasm/releasebuilds/${NASM}/nasm-${NASM}.tar.bz2 | \
+            tar -jx --strip-components=1 -C /tmp/nasm
+RUN \
+    echo "**** compiling nasm ****" \
+        && cd /tmp/nasm \
+        && ./autogen.sh \
+        && ./configure \
+            --disable-static \
+            --enable-shared \
+        && make -j$(nproc) \
+        && echo 'make install' > ./install-cmd.sh
+
 # https://github.com/Netflix/vmaf/releases
+FROM scratch as LIBVMAF
+COPY --from=buildbase / /
+COPY --from=NASM /tmp/nasm /tmp/nasm
 ARG LIBVMAF
 RUN \
     echo "**** grabbing vmaf ****" \
@@ -323,17 +387,27 @@ RUN \
             echo "Arch does not support x86 runtime packages. Ignoring"; \
         fi
 RUN \
+    echo "**** pre-installing nasm ****" \
+        && cd /tmp/nasm \
+        && . ./install-cmd.sh \
+    && \
+    echo "**** cleanup pre-install ****" \
+        && cd / \
+        && rm -rf /tmp/nasm \
+    && \
     echo "**** compiling libvmaf ****" \
         && if uname -m | grep -q x86; then \
             cd /tmp/vmaf/libvmaf \
             && meson build --buildtype release \
             && ninja -vC build \
-            && ninja -vC build install; \ 
+            && echo 'ninja -vC build/ install' > ./install-cmd.sh; \ 
         else \
             echo "Arch does not support x86 runtime packages. Ignoring"; \
         fi
 
 # https://ftp.osuosl.org/pub/xiph/releases/ogg/?C=M;O=D
+FROM scratch as OGG
+COPY --from=buildbase / /
 ARG OGG
 RUN \
     echo "**** grabbing ogg ****" \
@@ -347,10 +421,12 @@ RUN \
         && ./configure \
             --disable-static \
             --enable-shared \
-        && make \
-        && make install
+        && make -j$(nproc) \
+        && echo 'make install' > ./install-cmd.sh
 
 # https://sourceforge.net/projects/opencore-amr/files/opencore-amr/
+FROM scratch as OPENCOREAMR
+COPY --from=buildbase / /
 ARG OPENCOREAMR
 RUN \
     echo "**** grabbing opencore-amr ****" \
@@ -364,10 +440,12 @@ RUN \
         && ./configure \
             --disable-static \
             --enable-shared \
-        && make \
-        && make install
+        && make -j$(nproc) \
+        && echo 'make install' > ./install-cmd.sh
 
 # https://github.com/uclouvain/openjpeg/releases
+FROM scratch as OPENCOPENJPEGOREAMR
+COPY --from=buildbase / /
 ARG OPENJPEG
 RUN \
     echo "**** grabbing openjpeg ****" \
@@ -386,10 +464,12 @@ RUN \
         && cmake \
             -DBUILD_STATIC_LIBS=0 \
             -DBUILD_THIRDPARTY:BOOL=ON . \
-        && make \
-        && make install
+        && make -j$(nproc) \
+        && echo 'make install' > ./install-cmd.sh
 
 # https://archive.mozilla.org/pub/opus/
+FROM scratch as OPUS
+COPY --from=buildbase / /
 ARG OPUS
 RUN \
     echo "**** grabbing opus ****" \
@@ -404,10 +484,42 @@ RUN \
         && ./configure \
             --disable-static \
             --enable-shared \
-        && make \
-        && make install
+        && make -j$(nproc) \
+        && echo 'make install' > ./install-cmd.sh
+
+# https://ftp.osuosl.org/pub/xiph/releases/vorbis/
+FROM scratch as VORBIS
+COPY --from=buildbase / /
+COPY --from=OGG /tmp/ogg /tmp/ogg
+ARG VORBIS
+RUN \
+    echo "**** grabbing vorbis ****" \
+        && mkdir -p /tmp/vorbis \
+        && curl -Lf \
+            http://downloads.xiph.org/releases/vorbis/libvorbis-${VORBIS}.tar.gz | \
+            tar -zx --strip-components=1 -C /tmp/vorbis
+RUN \
+    echo "**** pre-installing ogg ****" \
+        && cd /tmp/ogg \
+        && . ./install-cmd.sh \
+    && \
+    echo "**** cleanup pre-install ****" \
+        && cd / \
+        && rm -rf /tmp/ogg \
+    && \
+    echo "**** compiling vorbis ****" \
+        && cd /tmp/vorbis \
+        && ./configure \
+            --disable-static \
+            --enable-shared \
+        && make -j$(nproc) \
+        && echo 'make install' > ./install-cmd.sh
 
 # https://ftp.osuosl.org/pub/xiph/releases/theora/
+FROM scratch as THEORA
+COPY --from=buildbase / /
+COPY --from=OGG /tmp/ogg /tmp/ogg
+COPY --from=VORBIS /tmp/vorbis /tmp/vorbis
 ARG THEORA
 RUN \
     echo "**** grabbing theora ****" \
@@ -416,6 +528,18 @@ RUN \
             http://downloads.xiph.org/releases/theora/libtheora-${THEORA}.tar.gz | \
             tar -zx --strip-components=1 -C /tmp/theora
 RUN \
+    echo "**** pre-installing ogg ****" \
+        && cd /tmp/ogg \
+        && . ./install-cmd.sh \
+    && \
+    echo "**** pre-installing vorbis ****" \
+        && cd /tmp/vorbis \
+        && . ./install-cmd.sh \
+    && \
+    echo "**** cleanup pre-install ****" \
+        && cd / \
+        && rm -rf /tmp/ogg \
+    && \
     echo "**** compiling theora ****" \
         && cd /tmp/theora \
         && cp \
@@ -431,10 +555,12 @@ RUN \
         && ./configure \
             --disable-static \
             --enable-shared \
-        && make \
-        && make install
+        && make -j$(nproc) \
+        && echo 'make install' > ./install-cmd.sh
 
 # https://github.com/georgmartius/vid.stab/releases
+FROM scratch as LIBVIDSTAB
+COPY --from=buildbase / /
 ARG LIBVIDSTAB
 RUN \
     echo "**** grabbing vid.stab ****" \
@@ -448,35 +574,20 @@ RUN \
             cd /tmp/vid.stab \
             && cmake \
                 -DBUILD_STATIC_LIBS=0 . \
-            && make \
+            && make -j$(nproc) \
             && make install; \ 
         else \
             cd /tmp/vid.stab \
             && echo "" > \
                 CMakeModules/FindSSE.cmake \
             && cmake . \
-            && make \
-            && make install; \
+            && make -j$(nproc) \
+            && echo 'make install' > ./install-cmd.sh; \
         fi
 
-# https://ftp.osuosl.org/pub/xiph/releases/vorbis/
-ARG VORBIS
-RUN \
-    echo "**** grabbing vorbis ****" \
-        && mkdir -p /tmp/vorbis \
-        && curl -Lf \
-            http://downloads.xiph.org/releases/vorbis/libvorbis-${VORBIS}.tar.gz | \
-            tar -zx --strip-components=1 -C /tmp/vorbis
-RUN \
-    echo "**** compiling vorbis ****" \
-        && cd /tmp/vorbis \
-        && ./configure \
-            --disable-static \
-            --enable-shared \
-        && make \
-        && make install
-
 # https://github.com/webmproject/libvpx/releases
+FROM scratch as VPX
+COPY --from=buildbase / /
 ARG VPX
 RUN \
     echo "**** grabbing vpx ****" \
@@ -499,15 +610,17 @@ RUN \
             --enable-vp8 \
             --enable-vp9 \
             --enable-vp9-highbitdepth \
-        && make \
-        && make install
+        && make -j$(nproc) \
+        && echo 'make install' > ./install-cmd.sh
 
-ARG x264
+FROM scratch as X264
+COPY --from=buildbase / /
+ARG X264
 RUN \
     echo "**** grabbing x264 ****" \
         && mkdir -p /tmp/x264 \
         && curl -Lf \
-            https://code.videolan.org/videolan/x264/-/archive/master/x264-${x264}.tar.bz2 | \
+            https://code.videolan.org/videolan/x264/-/archive/master/x264-${X264}.tar.bz2 | \
             tar -jx --strip-components=1 -C /tmp/x264
 RUN \
     echo "**** compiling x264 ****" \
@@ -517,9 +630,11 @@ RUN \
             --disable-static \
             --enable-pic \
             --enable-shared \
-        && make \
-        && make install
+        && make -j$(nproc) \
+        && echo 'make install' > ./install-cmd.sh
 
+FROM scratch as X265
+COPY --from=buildbase / /
 ARG X265
 RUN \
     echo "**** grabbing x265 ****" \
@@ -532,14 +647,18 @@ RUN \
         && if uname -m | grep -q x86; then \
             cd /tmp/x265/build/linux \
             && ./multilib.sh \
-            && make -C 8bit install; \ 
+            && make -C 8bit \
+            && echo 'make -C 8bit install' > ./install-cmd.sh; \ 
         else \
             cd /tmp/x265/build/linux \
             && export CXXFLAGS="-fPIC" \
             && ./multilib.sh \
-            && make -C 8bit install; \
+            && make -C 8bit \
+            && echo 'make -C 8bit install' > ./install-cmd.sh; \ 
         fi
 
+FROM scratch as XVID
+COPY --from=buildbase / /
 ARG XVID
 RUN \
     echo "**** grabbing xvid ****" \
@@ -551,28 +670,12 @@ RUN \
     echo "**** compiling xvid ****" \
         && cd /tmp/xvid/build/generic \
         && ./configure \ 
-        && make \
-        && make install
-
-# https://www.nasm.us/pub/nasm/releasebuilds/
-ARG NASM
-RUN \
-    echo "**** grabbing nasm ****" \
-        && mkdir -p /tmp/nasm \
-        && curl -Lf \
-            https://www.nasm.us/pub/nasm/releasebuilds/${NASM}/nasm-${NASM}.tar.bz2 | \
-            tar -jx --strip-components=1 -C /tmp/nasm
-RUN \
-    echo "**** compiling nasm ****" \
-        && cd /tmp/nasm \
-        && ./autogen.sh \
-        && ./configure \
-            --disable-static \
-            --enable-shared \
-        && make \
-        && make install
+        && make -j$(nproc) \
+        && echo 'make install' > ./install-cmd.sh
 
 # https://code.videolan.org/videolan/dav1d
+FROM scratch as LIBDAV1D
+COPY --from=buildbase / /
 ARG LIBDAV1D
 RUN \
     echo "**** grabbing dav1d ****" \
@@ -588,9 +691,11 @@ RUN \
         && cd build \
         && meson --bindir="/usr/local/bin" .. \
         && ninja \
-        && ninja install
+        && echo 'ninja install' > ./install-cmd.sh
 
 # https://github.com/sekrit-twc/zimg/
+FROM scratch as ZIMG
+COPY --from=buildbase / /
 ARG ZIMG
 RUN \
     echo "**** grabbing zimg ****" \
@@ -605,28 +710,32 @@ RUN \
         && ./configure \
             --disable-static \
             --enable-shared \
-        && make \
-        && make install
+        && make -j$(nproc) \
+        && echo 'make install' > ./install-cmd.sh
 
 # https://sourceforge.net/projects/soxr
+FROM scratch as SOXR
+COPY --from=buildbase / /
 ARG SOXR
 RUN \
     echo "**** grabbing soxr ****" \
         && mkdir -p /tmp/soxr \
         && curl -Lf \
             https://downloads.sourceforge.net/project/soxr/soxr-${SOXR}-Source.tar.xz -o /tmp/soxr-${SOXR}-Source.tar.xz \
-        && rm -rfv /tmp/soxr/* \
-        && tar xf /tmp/soxr-${SOXR}-Source.tar.xz --strip-components=1 -C /tmp/soxr
+        && tar xf /tmp/soxr-${SOXR}-Source.tar.xz --strip-components=1 -C /tmp/soxr \ 
+        && rm /tmp/soxr-${SOXR}-Source.tar.xz \ 
 RUN \
     echo "**** compiling soxr ****" \
         && cd /tmp/soxr \
         && mkdir -p ./build \
         && cd ./build \
         && cmake -G "Unix Makefiles" -DWITH_OPENMP:bool=off -DBUILD_TESTS:bool=off -DCMAKE_BUILD_TYPE=Release .. \
-        && make \
-        && make install
+        && make -j$(nproc) \
+        && echo 'make install' > ./install-cmd.sh
 
 # https://github.com/xiph/speex/
+FROM scratch as SPEEX
+COPY --from=buildbase / /
 ARG SPEEX
 RUN \
     echo "**** grabbing speex ****" \
@@ -641,10 +750,12 @@ RUN \
         && ./configure \
             --disable-static \
             --enable-shared \
-        && make \
-        && make install
+        && make -j$(nproc) \
+        && echo 'make install' > ./install-cmd.sh
 
 # https://sourceforge.net/projects/opencore-amr/files/vo-amrwbenc/
+FROM scratch as LIBVOAMRWBENC
+COPY --from=buildbase / /
 ARG LIBVOAMRWBENC
 RUN \
     echo "**** grabbing vo-amrwbenc ****" \
@@ -656,10 +767,12 @@ RUN \
     echo "**** compiling vo-amrwbenc ****" \
         && cd /tmp/vo-amrwbenc \
         && ./configure \
-        && make \
-        && make install
+        && make -j$(nproc) \
+        && echo 'make install' > ./install-cmd.sh
 
 # https://chromium.googlesource.com/webm/libwebp.git
+FROM scratch as LIBWEBP
+COPY --from=buildbase / /
 ARG LIBWEBP
 RUN \
     echo "**** grabbing libwebp ****" \
@@ -675,10 +788,56 @@ RUN \
         && ./configure \
             --disable-static \
             --enable-shared \
-        && make \
-        && make install
+        && make -j$(nproc) \
+        && echo 'make install' > ./install-cmd.sh
 
-# Main ffmpeg build
+FROM scratch as FFMPEG
+COPY --from=buildbase / /
+COPY --from=FONTCONFIG     /tmp   /tmp
+COPY --from=KVAZAAR        /tmp   /tmp
+COPY --from=LAME           /tmp   /tmp
+COPY --from=LIBAOM         /tmp   /tmp
+COPY --from=LIBASS         /tmp   /tmp
+COPY --from=LIBDAV1D       /tmp   /tmp
+COPY --from=LIBDRM         /tmp   /tmp
+COPY --from=LIBFDKAAC      /tmp   /tmp
+COPY --from=LIBFREETYPE    /tmp   /tmp
+COPY --from=LIBFRIBIDI     /tmp   /tmp
+COPY --from=LIBVA          /tmp   /tmp
+COPY --from=LIBVDPAU       /tmp   /tmp
+COPY --from=LIBVIDSTAB     /tmp   /tmp
+COPY --from=LIBVMAF        /tmp   /tmp
+COPY --from=LIBVOAMRWBENC  /tmp   /tmp
+COPY --from=LIBWEBP        /tmp   /tmp
+COPY --from=NASM           /tmp   /tmp
+COPY --from=NVCODEC        /tmp   /tmp
+COPY --from=OGG            /tmp   /tmp
+COPY --from=OPENCOREAMR    /tmp   /tmp
+COPY --from=OPENJPEG       /tmp   /tmp
+COPY --from=OPUS           /tmp   /tmp
+COPY --from=SOXR           /tmp   /tmp
+COPY --from=SPEEX          /tmp   /tmp
+COPY --from=THEORA         /tmp   /tmp
+COPY --from=VORBIS         /tmp   /tmp
+COPY --from=VPX            /tmp   /tmp
+COPY --from=X264           /tmp   /tmp
+COPY --from=X265           /tmp   /tmp
+COPY --from=XVID           /tmp   /tmp
+COPY --from=ZIMG           /tmp   /tmp
+RUN \
+    echo "**** installing all ffmpeg deps ****" \
+        && for d in /tmp/*; do \
+            if [ -d "${d}" ]; then \
+                if [ -e "${d}/install-cmd.sh" ]; then \
+                    echo \
+                    && echo \
+                    && echo "  - Running installation from commands in ${d}/install-cmd.sh" \
+                    && cd ${d} \
+                    && . ./install-cmd.sh \
+                    && echo "DONE"; \
+                fi \
+            fi \
+        done
 ARG FFMPEG_VERSION
 RUN \
     echo "**** grabbing ffmpeg ****" \
