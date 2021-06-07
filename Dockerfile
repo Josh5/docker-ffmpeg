@@ -120,12 +120,12 @@ RUN \
             echo "Arch does not support x86 runtime packages. Ignoring"; \
         fi
 
-ARG FREETYPE
+ARG LIBFREETYPE
 RUN \
     echo "**** grabbing freetype ****" \
         && mkdir -p /tmp/freetype \
         && curl -Lf \
-            https://download.savannah.gnu.org/releases/freetype/freetype-${FREETYPE}.tar.gz | \
+            https://download.savannah.gnu.org/releases/freetype/freetype-${LIBFREETYPE}.tar.gz | \
             tar -zx --strip-components=1 -C /tmp/freetype
 RUN \
     echo "**** compiling freetype ****" \
@@ -199,7 +199,7 @@ RUN \
     echo "**** grabbing lame ****" \
         && mkdir -p /tmp/lame \
         && curl -Lf \
-            http://downloads.sourceforge.net/project/lame/lame/3.100/lame-${LAME}.tar.gz | \
+            http://downloads.sourceforge.net/project/lame/lame/${LAME}/lame-${LAME}.tar.gz | \
             tar -zx --strip-components=1 -C /tmp/lame
 RUN \
     echo "**** compiling lame ****" \

@@ -5,7 +5,7 @@
 # File Created: Saturday, 5th June 2021 1:08:20 am
 # Author: Josh.5 (jsunnex@gmail.com)
 # -----
-# Last Modified: Monday, 7th June 2021 2:30:45 pm
+# Last Modified: Monday, 7th June 2021 3:03:29 pm
 # Modified By: Josh.5 (jsunnex@gmail.com)
 ###
 
@@ -26,6 +26,7 @@ docker build --pull \
     --build-arg LIBDAV1D=${LIBDAV1D} \
     --build-arg LIBDRM=${LIBDRM} \
     --build-arg LIBFDKAAC=${LIBFDKAAC} \
+    --build-arg LIBFREETYPE=${LIBFREETYPE} \
     --build-arg LIBFRIBIDI=${LIBFRIBIDI} \
     --build-arg LIBVA=${LIBVA} \
     --build-arg LIBVDPAU=${LIBVDPAU} \
