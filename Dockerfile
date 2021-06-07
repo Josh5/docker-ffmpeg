@@ -685,7 +685,7 @@ RUN \
         && cd /tmp/xvid/build/generic \
         && ./configure \ 
         && make -j$(nproc) \
-        && echo 'make install' > ./install-cmd.sh
+        && echo 'cd /tmp/xvid/build/generic && make install' > /tmp/xvid/install-cmd.sh
 
 # https://code.videolan.org/videolan/dav1d
 FROM scratch as LIBDAV1D
@@ -866,7 +866,7 @@ COPY --from=X265           /tmp   /tmp
 COPY --from=XVID           /tmp   /tmp
 COPY --from=ZIMG           /tmp   /tmp
 RUN \
-    echo "**** installing all ffmpeg deps ****" \
+    echo "**** installing ffmpeg deps ****" \
         && for d in /tmp/*; do \
             if [ -d "${d}" ]; then \
                 if ! ls -la "${d}/install-cmd.sh"; then \
