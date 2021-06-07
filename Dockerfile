@@ -723,7 +723,7 @@ RUN \
         && curl -Lf \
             https://downloads.sourceforge.net/project/soxr/soxr-${SOXR}-Source.tar.xz -o /tmp/soxr-${SOXR}-Source.tar.xz \
         && tar xf /tmp/soxr-${SOXR}-Source.tar.xz --strip-components=1 -C /tmp/soxr \ 
-        && rm /tmp/soxr-${SOXR}-Source.tar.xz \ 
+        && rm /tmp/soxr-${SOXR}-Source.tar.xz
 RUN \
     echo "**** compiling soxr ****" \
         && cd /tmp/soxr \
