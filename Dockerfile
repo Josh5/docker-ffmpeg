@@ -907,6 +907,7 @@ RUN \
             --enable-libfdk_aac \
             --enable-libfreetype \
             --enable-libfribidi \
+            --enable-libkvazaar \
             --enable-libmp3lame \
             --enable-libopencore-amrnb \
             --enable-libopencore-amrwb \
@@ -930,9 +931,6 @@ RUN \
             --enable-openssl \
             ${ADDITIONAL_FFMPEG_ARGS} \
         && make
-# TODO: Re-enable...
-## --enable-libkvazaar
-
 # TODO: Look into adding...
 ## --enable-frei0r
 ## --enable-gnutls

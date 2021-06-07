@@ -5,7 +5,7 @@
 # File Created: Saturday, 5th June 2021 1:08:20 am
 # Author: Josh.5 (jsunnex@gmail.com)
 # -----
-# Last Modified: Monday, 7th June 2021 6:57:01 pm
+# Last Modified: Monday, 7th June 2021 10:17:12 pm
 # Modified By: Josh.5 (jsunnex@gmail.com)
 ###
 
@@ -51,7 +51,7 @@ docker buildx build \
     --build-arg ZIMG=${ZIMG} \
     --tag josh5/ffmpeg:latest \
     --platform linux/amd64 \
-    --iidfile /tmp/docker-build-push-D4bGPh/iidfile \
+    --iidfile /tmp/.buildx-iidfile \
     --cache-from type=local,src=/tmp/.buildx-cache \
-    --cache-to type=local,dest=/tmp/.buildx-cache \
+    --cache-to type=local,mode=max,dest=/tmp/.buildx-cache \
     --file Dockerfile .
