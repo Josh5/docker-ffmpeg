@@ -946,6 +946,6 @@ LABEL build_version="Version:- ${VERSION} Build-date:- ${BUILD_DATE}"
 LABEL maintainer="Josh.5"
 
 # Add files from buildstage
-COPY --from=buildstage /buildout/ /
+COPY --from=FFMPEG /buildout/ /
 
 COPY /versions.cfg /versions.cfg
