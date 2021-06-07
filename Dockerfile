@@ -788,3 +788,5 @@ LABEL maintainer="Josh.5"
 
 # Add files from buildstage
 COPY --from=buildstage /buildout/ /
+
+COPY /versions.cfg /versions.cfg
