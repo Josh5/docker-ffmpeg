@@ -187,4 +187,8 @@ jobs:
     - name: Move cache
       if: always()
       run: |
-        if [ -e /tmp/.buildx-cache-new ]; then rm -rf /tmp/.buildx-cache && mv /tmp/.buildx-cache-new /tmp/.buildx-cache; fi
+        if [[ -e /tmp/.buildx-cache-new ]]; then
+          echo "Cleaning up old cache..."
+          rm -rf /tmp/.buildx-cache
+          mv -v /tmp/.buildx-cache-new /tmp/.buildx-cache
+        fi
