@@ -102,6 +102,7 @@ jobs:
           DOCKER_PUSH="false"
         fi
 
+        echo ::set-output name=branch::${DOCKER_IMAGE}
         echo ::set-output name=docker_image::${DOCKER_IMAGE}
         echo ::set-output name=docker_tags::$(echo ${DOCKER_TAGS} | sed 's/,$//')
         echo ::set-output name=docker_platforms::linux/amd64,linux/arm64
@@ -114,7 +115,7 @@ jobs:
       id: cache
       with:
         path: /tmp/.buildx-cache
-        key: ${{ runner.os }}-buildx-${{ github.sha }}
+        key: ${{ runner.os }}-buildx-${{ github.ref }}
         restore-keys: |
           ${{ runner.os }}-buildx-
     
