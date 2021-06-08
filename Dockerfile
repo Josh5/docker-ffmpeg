@@ -14,43 +14,43 @@ ENV \
 # 
 RUN \
     echo "**** install build packages ****" \
-    && apt-get update \ 
-    && apt-get install -y \
-        autoconf \
-        automake \
-        bzip2 \
-        ca-certificates \
-        cmake \
-        curl \
-        diffutils \
-        doxygen \
-        g++ \
-        gcc \
-        git \
-        gperf \
-        libexpat1-dev \
-        libxext-dev \
-        libgcc-7-dev \
-        libgomp1 \
-        libpciaccess-dev \
-        libssl-dev \
-        libtool \
-        libv4l-dev \
-        libx11-dev \
-        libxml2-dev \
-        make \
-        nasm \
-        perl \
-        pkg-config \
-        python \
-        x11proto-xext-dev \
-        xserver-xorg-dev \
-        yasm \
-        zlib1g-dev \
+        && apt-get update \ 
+        && apt-get install -y \
+            autoconf \
+            automake \
+            bzip2 \
+            ca-certificates \
+            cmake \
+            curl \
+            diffutils \
+            g++ \
+            gcc \
+            git \
+            gperf \
+            libexpat1-dev \
+            libxext-dev \
+            libgcc-7-dev \
+            libgomp1 \
+            libpciaccess-dev \
+            libssl-dev \
+            libtool \
+            libv4l-dev \
+            libx11-dev \
+            libxml2-dev \
+            make \
+            nasm \
+            perl \
+            pkg-config \
+            python \
+            x11proto-xext-dev \
+            xserver-xorg-dev \
+            yasm \
+            zlib1g-dev \
     && \
     echo "**** install x86 specific packages ($(uname -m)) ****" \
         && if uname -m | grep -q x86; then \
             apt-get install -y \
+                doxygen \
                 ninja-build \
                 python3 \
                 python3-pip\
@@ -61,7 +61,24 @@ RUN \
                 meson; \
         else \
             echo "Arch does not support x86 runtime packages. Ignoring"; \
-        fi
+        fi \
+    && \
+    echo "**** install aarch64 specific packages ($(uname -m)) ****" \
+        && if uname -m | grep -q aarch64; then \
+            apt-get install -y \
+                libfontconfig1-dev \
+        else \
+            echo "Arch does not support aarch64 runtime packages. Ignoring"; \
+        fi \
+    && \
+    echo "**** cleanup ****" \
+        && apt-get autoremove \
+        && apt-get clean \
+        && rm -rf \
+            /tmp/* \
+            /var/lib/apt/lists/* \
+            /var/tmp/*
+
 
 #  _____         _                    _           _ _ _         
 # |___ / _ __ __| |  _ __   __ _ _ __| |_ _   _  | (_) |__  ___ 
@@ -161,9 +178,9 @@ COPY --from=buildbase / /
 ARG FONTCONFIG
 RUN \
     echo "**** grabbing fontconfig ****" \
+        && mkdir -p /tmp/fontconfig \
         && if uname -m | grep -q x86; then \
-            mkdir -p /tmp/fontconfig \
-            && curl -Lf \
+            curl -Lf \
                 https://www.freedesktop.org/software/fontconfig/release/fontconfig-${FONTCONFIG}.tar.gz | \
                 tar -zx --strip-components=1 -C /tmp/fontconfig; \ 
         else \
@@ -179,7 +196,8 @@ RUN \
             && make -j$(nproc) \
             && echo 'make install' > ./install-cmd.sh; \
         else \
-            echo "Arch does not support x86 runtime packages. Ignoring"; \
+            echo "Arch does not support x86 runtime packages. Ignoring" \
+            && echo 'echo "fontconfig not built for arch..."' > /tmp/fontconfig/install-cmd.sh; \
         fi
 
 FROM scratch as LIBFRIBIDI
@@ -918,7 +936,6 @@ RUN \
             --enable-libtheora \
             --enable-libv4l2 \
             --enable-libvidstab \
-            --enable-libvmaf \
             --enable-libvo-amrwbenc \
             --enable-libvorbis \
             --enable-libvpx \
