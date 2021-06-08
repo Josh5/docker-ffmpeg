@@ -740,11 +740,15 @@ COPY --from=NASM /tmp/nasm /tmp/nasm
 ARG LIBDAV1D
 RUN \
     echo "**** grabbing dav1d ****" \
-        && mkdir -p /tmp/dav1d \
-        && git clone \
-            --branch ${LIBDAV1D} \
-            --depth 1 https://code.videolan.org/videolan/dav1d.git \
-            /tmp/dav1d
+        && if uname -m | grep -q x86; then \
+            mkdir -p /tmp/dav1d \
+            && git clone \
+                --branch ${LIBDAV1D} \
+                --depth 1 https://code.videolan.org/videolan/dav1d.git \
+                /tmp/dav1d ; \
+        else \
+            echo "Arch is not x86. Ignoring"; \
+        fi
 RUN \
     echo "**** pre-installing nasm ****" \
         && cd /tmp/nasm \
@@ -755,12 +759,16 @@ RUN \
         && rm -rf /tmp/nasm \
     && \
     echo "**** compiling dav1d ****" \
-        && cd /tmp/dav1d \
-        && mkdir -p build \
-        && cd build \
-        && meson --bindir="/usr/local/bin" .. \
-        && ninja \
-        && echo 'cd /tmp/dav1d/build && ninja install' > /tmp/dav1d/install-cmd.sh
+        && if uname -m | grep -q x86; then \
+            cd /tmp/dav1d \
+            && mkdir -p build \
+            && cd build \
+            && meson --bindir="/usr/local/bin" .. \
+            && ninja \
+            && echo 'cd /tmp/dav1d/build && ninja install' > /tmp/dav1d/install-cmd.sh ; \
+        else \
+            echo "Arch is not x86. Ignoring"; \
+        fi
 
 # https://github.com/sekrit-twc/zimg/
 FROM scratch as ZIMG
@@ -930,7 +938,7 @@ RUN \
 RUN \
     echo "**** compiling ffmpeg ****" \
         && if uname -m | grep -q x86; then \
-            ADDITIONAL_FFMPEG_ARGS='--enable-cuvid --enable-libvmaf --enable-nvdec --enable-nvenc --enable-vaapi --enable-vdpau'; \ 
+            ADDITIONAL_FFMPEG_ARGS='--enable-libdav1d --enable-cuvid --enable-libvmaf --enable-nvdec --enable-nvenc --enable-vaapi --enable-vdpau'; \ 
         fi \
         && cd /ffmpeg \
         && ./configure \
@@ -949,7 +957,6 @@ RUN \
             --enable-gray \
             --enable-libaom \
             --enable-libass \
-            --enable-libdav1d \
             --enable-libfdk_aac \
             --enable-libfreetype \
             --enable-libfribidi \
