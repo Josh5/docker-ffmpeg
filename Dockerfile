@@ -646,11 +646,11 @@ RUN \
     echo "**** compiling vpx ****" \
         && if uname -m | grep -q armv7l; then \
             echo "  - building for armv7l" \
-            && export ENV_BUILD_VARS='LDFLAGS=-mfloat-abi=hard' \
+            && export ADDITIONAL_LDFLAGS='-mfloat-abi=hard' \
             && export ADDITIONAL_CONFIG_ARGS='--enable-vp9-highbitdepth --extra-cflags="-mfloat-abi=hard" --extra-cxxflags="-mfloat-abi=hard"'; \
         fi \
         && cd /tmp/vpx \
-        && ${ENV_BUILD_VARS} ./configure \
+        && LDFLAGS=${ADDITIONAL_LDFLAGS} ./configure \
             --disable-debug \
             --disable-docs \
             --disable-examples \
