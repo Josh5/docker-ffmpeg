@@ -106,8 +106,15 @@ RUN \
         && mkdir -p \
             aom_build \
         && cd aom_build \
-        && cmake \
-            -DBUILD_STATIC_LIBS=0 .. \
+        && if uname -m | grep -q armv7l; then \
+            echo "  - build AOM_TARGET_CPU=generic" \
+            && cmake \
+	            -DAOM_TARGET_CPU=generic \
+                -DBUILD_STATIC_LIBS=0 .. ; \
+        else \
+            cmake \
+                -DBUILD_STATIC_LIBS=0 .. ; \
+        fi \
         && make -j$(nproc) \
         && echo 'cd /tmp/aom/aom_build && make install' > /tmp/aom/install-cmd.sh
 
@@ -637,8 +644,13 @@ RUN \
             tar -zx --strip-components=1 -C /tmp/vpx
 RUN \
     echo "**** compiling vpx ****" \
+        && if uname -m | grep -q armv7l; then \
+            echo "  - building for armv7l" \
+            && export ENV_BUILD_VARS='LDFLAGS=-mfloat-abi=hard' \
+            && export ADDITIONAL_CONFIG_ARGS='--enable-vp9-highbitdepth --extra-cflags="-mfloat-abi=hard" --extra-cxxflags="-mfloat-abi=hard"'; \
+        fi \
         && cd /tmp/vpx \
-        && ./configure \
+        && ${ENV_BUILD_VARS} ./configure \
             --disable-debug \
             --disable-docs \
             --disable-examples \
@@ -649,7 +661,7 @@ RUN \
             --enable-shared \
             --enable-vp8 \
             --enable-vp9 \
-            --enable-vp9-highbitdepth \
+            --enable-vp9-highbitdepth ${ADDITIONAL_CONFIG_ARGS} \
         && make -j$(nproc) \
         && echo 'make install' > ./install-cmd.sh
 
@@ -955,8 +967,7 @@ RUN \
             --enable-libxml2 \
             --enable-libxvid \
             --enable-libzimg \
-            --enable-openssl \
-            ${ADDITIONAL_FFMPEG_ARGS} \
+            --enable-openssl ${ADDITIONAL_FFMPEG_ARGS} \
         && make -j$(nproc)
 # TODO: Look into adding...
 ## --enable-frei0r
