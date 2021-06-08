@@ -87,376 +87,171 @@ RUN \
 # |____/|_|  \__,_| | .__/ \__,_|_|   \__|\__, | |_|_|_.__/|___/
 #                   |_|                   |___/                 
 #
+# LIBAOM
 FROM scratch as LIBAOM
 COPY --from=buildbase / /
+COPY /scripts/LIBAOM /scripts/LIBAOM
 ARG LIBAOM
 RUN \
-    echo "**** grabbing aom ****" \
-        && mkdir -p /tmp/aom \
-        && git clone \
-            --branch ${LIBAOM} \
-            --depth 1 https://aomedia.googlesource.com/aom \
-            /tmp/aom
-RUN \
-    echo "**** compiling aom ****" \
-        && cd /tmp/aom \
-        && rm -rf \
-            CMakeCache.txt \
-            CMakeFiles \
-        && mkdir -p \
-            aom_build \
-        && cd aom_build \
-        && if uname -m | grep -q armv7l; then \
-            echo "  - build AOM_TARGET_CPU=generic" \
-            && cmake \
-	            -DAOM_TARGET_CPU=generic \
-                -DBUILD_STATIC_LIBS=0 .. ; \
-        else \
-            cmake \
-                -DBUILD_STATIC_LIBS=0 .. ; \
-        fi \
-        && make -j$(nproc) \
-        && echo 'cd /tmp/aom/aom_build && make install' > /tmp/aom/install-cmd.sh
+    for script in /scripts/LIBAOM/*.sh; do \
+        chmod +x "${script}" \
+        && bash -c "${script}" ; \
+    done
 
+# LIBFDKAAC
 # https://github.com/mstorsjo/fdk-aac/releases
 FROM scratch as LIBFDKAAC
 COPY --from=buildbase / /
+COPY /scripts/LIBFDKAAC /scripts/LIBFDKAAC
 ARG LIBFDKAAC
 RUN \
-    echo "**** grabbing fdk-aac ****" \
-        && mkdir -p /tmp/fdk-aac \
-        && curl -Lf \
-            https://github.com/mstorsjo/fdk-aac/archive/v${LIBFDKAAC}.tar.gz | \
-            tar -zx --strip-components=1 -C /tmp/fdk-aac
-RUN \
-    echo "**** compiling fdk-aac ****" \
-        && cd /tmp/fdk-aac \
-        && autoreconf -fiv \
-        && ./configure \
-            --disable-static \
-            --enable-shared \
-        && make -j$(nproc) \
-        && echo 'make install' > ./install-cmd.sh
+    for script in /scripts/LIBFDKAAC/*.sh; do \
+        chmod +x "${script}" \
+        && bash -c "${script}" ; \
+    done
 
+# NVCODEC
 FROM scratch as NVCODEC
 COPY --from=buildbase / /
+COPY /scripts/NVCODEC /scripts/NVCODEC
 ARG NVCODEC
 RUN \
-    echo "**** grabbing ffnvcodec ****" \
-        && if uname -m | grep -q x86; then \
-            mkdir -p /tmp/ffnvcodec \
-            && git clone \
-                --branch ${NVCODEC} \
-                --depth 1 https://git.videolan.org/git/ffmpeg/nv-codec-headers.git \
-                /tmp/ffnvcodec; \ 
-        else \
-            echo "Arch is not x86. Ignoring"; \
-        fi
-RUN \
-    echo "**** compiling ffnvcodec ****" \
-        && if uname -m | grep -q x86; then \
-            cd /tmp/ffnvcodec \
-            && make -j$(nproc) \
-            && echo 'make install' > ./install-cmd.sh; \ 
-        else \
-            echo "Arch is not x86. Ignoring"; \
-        fi
+    for script in /scripts/NVCODEC/*.sh; do \
+        chmod +x "${script}" \
+        && bash -c "${script}" ; \
+    done
 
+# LIBFREETYPE
 FROM scratch as LIBFREETYPE
 COPY --from=buildbase / /
+COPY /scripts/LIBFREETYPE /scripts/LIBFREETYPE
 ARG LIBFREETYPE
 RUN \
-    echo "**** grabbing freetype ****" \
-        && mkdir -p /tmp/freetype \
-        && curl -Lf \
-            https://download.savannah.gnu.org/releases/freetype/freetype-${LIBFREETYPE}.tar.gz | \
-            tar -zx --strip-components=1 -C /tmp/freetype
-RUN \
-    echo "**** compiling freetype ****" \
-        && cd /tmp/freetype \
-        && ./configure \
-            --disable-static \
-            --enable-shared \
-        && make -j$(nproc) \
-        && echo 'make install' > ./install-cmd.sh
+    for script in /scripts/LIBFREETYPE/*.sh; do \
+        chmod +x "${script}" \
+        && echo "RUNNING: ${script}" \
+        && sleep 3 \
+        && bash -c "${script}" ; \
+    done
 
+# FONTCONFIG
 FROM scratch as FONTCONFIG
 COPY --from=buildbase / /
 COPY --from=LIBFREETYPE /tmp/freetype /tmp/freetype
+COPY /scripts/FONTCONFIG /scripts/FONTCONFIG
 ARG FONTCONFIG
 RUN \
-    echo "**** grabbing fontconfig ****" \
-        && if uname -m | grep -q x86; then \
-            mkdir -p /tmp/fontconfig \
-            && curl -Lf \
-                https://www.freedesktop.org/software/fontconfig/release/fontconfig-${FONTCONFIG}.tar.gz | \
-                tar -zx --strip-components=1 -C /tmp/fontconfig; \ 
-        else \
-            echo "Arch is not x86. Ignoring"; \
-        fi
-RUN \
-    echo "**** pre-installing freetype ****" \
-        && cd /tmp/freetype \
-        && . ./install-cmd.sh \
-    && \
-    echo "**** cleanup pre-install ****" \
-        && cd / \
-        && rm -rf /tmp/freetype  \
-    && \
-    echo "**** compiling fontconfig ****" \
-        && if uname -m | grep -q x86; then \
-            cd /tmp/fontconfig \
-            && ./configure \
-                --disable-static \
-                --enable-shared \
-            && make -j$(nproc) \
-            && echo 'make install' > ./install-cmd.sh; \
-        else \
-            echo "Arch is not x86. Ignoring" \
-            && mkdir -p /tmp/fontconfig \
-            && echo "echo 'fontconfig is not compiled for this arch ($(uname -m))...'" > /tmp/fontconfig/install-cmd.sh; \
-        fi
+    for script in /scripts/FONTCONFIG/*.sh; do \
+        chmod +x "${script}" \
+        && bash -c "${script}" ; \
+    done
 
+# LIBFRIBIDI
 FROM scratch as LIBFRIBIDI
 COPY --from=buildbase / /
+COPY /scripts/LIBFRIBIDI /scripts/LIBFRIBIDI
 ARG LIBFRIBIDI
 RUN \
-    echo "**** grabbing fribidi ****" \
-        && mkdir -p /tmp/fribidi \
-        && curl -Lf \
-            https://github.com/fribidi/fribidi/archive/v${LIBFRIBIDI}.tar.gz | \
-            tar -zx --strip-components=1 -C /tmp/fribidi
-RUN \
-    echo "**** compiling fribidi ****" \
-        && cd /tmp/fribidi \
-        && ./autogen.sh \
-        && ./configure \
-            --disable-static \
-            --enable-shared \
-        && make -j 1 \
-        && echo 'make install' > ./install-cmd.sh
+    for script in /scripts/LIBFRIBIDI/*.sh; do \
+        chmod +x "${script}" \
+        && bash -c "${script}" ; \
+    done
 
+# KVAZAAR
 FROM scratch as KVAZAAR
 COPY --from=buildbase / /
+COPY /scripts/KVAZAAR /scripts/KVAZAAR
 ARG KVAZAAR
 RUN \
-    echo "**** grabbing kvazaar ****" \
-        && mkdir -p /tmp/kvazaar \
-        && curl -Lf \
-            https://github.com/ultravideo/kvazaar/archive/v${KVAZAAR}.tar.gz | \
-            tar -zx --strip-components=1 -C /tmp/kvazaar
-RUN \
-    echo "**** compiling kvazaar ****" \
-        && cd /tmp/kvazaar \
-        && ./autogen.sh \
-        && ./configure \
-            --disable-static \
-            --enable-shared \
-        && make -j$(nproc) \
-        && echo 'make install' > ./install-cmd.sh
+    for script in /scripts/KVAZAAR/*.sh; do \
+        chmod +x "${script}" \
+        && bash -c "${script}" ; \
+    done
 
+# LAME
 FROM scratch as LAME
 COPY --from=buildbase / /
+COPY /scripts/LAME /scripts/LAME
 ARG LAME
 RUN \
-    echo "**** grabbing lame ****" \
-        && mkdir -p /tmp/lame \
-        && curl -Lf \
-            http://downloads.sourceforge.net/project/lame/lame/${LAME}/lame-${LAME}.tar.gz | \
-            tar -zx --strip-components=1 -C /tmp/lame
-RUN \
-    echo "**** compiling lame ****" \
-        && cd /tmp/lame \
-        && cp \
-            /usr/share/automake-1.15/config.guess \
-            config.guess \
-        && cp \
-            /usr/share/automake-1.15/config.sub \
-            config.sub \
-        && ./configure \
-            --disable-frontend \
-            --disable-static \
-            --enable-nasm \
-            --enable-shared \
-        && make -j$(nproc) \
-        && echo 'make install' > ./install-cmd.sh
+    for script in /scripts/LAME/*.sh; do \
+        chmod +x "${script}" \
+        && bash -c "${script}" ; \
+    done
 
+# LIBASS
 FROM scratch as LIBASS
 COPY --from=buildbase / /
 COPY --from=LIBFREETYPE /tmp/freetype /tmp/freetype
 COPY --from=FONTCONFIG /tmp/fontconfig /tmp/fontconfig
 COPY --from=LIBFRIBIDI /tmp/fribidi /tmp/fribidi
+COPY /scripts/LIBASS /scripts/LIBASS
 ARG LIBASS
 RUN \
-    echo "**** grabbing libass ****" \
-        && mkdir -p /tmp/libass \
-        && curl -Lf \
-            https://github.com/libass/libass/archive/${LIBASS}.tar.gz | \
-            tar -zx --strip-components=1 -C /tmp/libass
-RUN \
-    echo "**** pre-installing freetype ****" \
-        && cd /tmp/freetype \
-        && . ./install-cmd.sh \
-    && \
-    echo "**** pre-installing fontconfig ****" \
-        && cd /tmp/fontconfig \
-        && . ./install-cmd.sh \
-    && \
-    echo "**** pre-installing fribidi ****" \
-        && cd /tmp/fribidi \
-        && . ./install-cmd.sh \
-    && \
-    echo "**** cleanup pre-install ****" \
-        && cd / \
-        && rm -rf /tmp/freetype \
-        && rm -rf /tmp/fontconfig \
-        && rm -rf /tmp/fribidi  \
-    && \
-    echo "**** compiling libass ****" \
-        && cd /tmp/libass \
-        && ./autogen.sh \
-        && ./configure \
-            --disable-static \
-            --enable-shared \
-        && make -j$(nproc) \
-        && echo 'make install' > ./install-cmd.sh
+    for script in /scripts/LIBASS/*.sh; do \
+        chmod +x "${script}" \
+        && bash -c "${script}" ; \
+    done
 
+# LIBDRM
 # https://dri.freedesktop.org/libdrm/
 FROM scratch as LIBDRM
 COPY --from=buildbase / /
+COPY /scripts/LIBDRM /scripts/LIBDRM
 ARG LIBDRM
 RUN \
-    echo "**** grabbing libdrm ****" \
-        && if uname -m | grep -q x86; then \
-            mkdir -p /tmp/libdrm \
-            && curl -Lf \
-                https://dri.freedesktop.org/libdrm/libdrm-${LIBDRM}.tar.xz -o /tmp/libdrm-${LIBDRM}.tar.xz \
-            && tar xf /tmp/libdrm-${LIBDRM}.tar.xz --strip-components=1 -C /tmp/libdrm \ 
-            && rm /tmp/libdrm-${LIBDRM}.tar.xz; \ 
-        else \
-            echo "Arch is not x86. Ignoring"; \
-        fi
-RUN \
-    echo "**** compiling libdrm ****" \
-        && if uname -m | grep -q x86; then \
-            cd /tmp/libdrm \
-            && meson builddir/ \
-            && ninja -vC builddir/ \
-            && echo 'ninja -vC builddir/ install' > ./install-cmd.sh; \ 
-        else \
-            echo "Arch is not x86. Ignoring"; \
-        fi
+    for script in /scripts/LIBDRM/*.sh; do \
+        chmod +x "${script}" \
+        && bash -c "${script}" ; \
+    done
 
+# LIBVA
 FROM scratch as LIBVA
 COPY --from=buildbase / /
+COPY /scripts/LIBVA /scripts/LIBVA
 ARG LIBVA
 RUN \
-    echo "**** grabbing libva ****" \
-        && if uname -m | grep -q x86; then \
-            mkdir -p /tmp/libva \
-            && curl -Lf \
-                https://github.com/intel/libva/archive/${LIBVA}.tar.gz | \
-                tar -zx --strip-components=1 -C /tmp/libva; \ 
-        else \
-            echo "Arch is not x86. Ignoring"; \
-        fi
-RUN \
-    echo "**** compiling libva ****" \
-        && if uname -m | grep -q x86; then \
-            cd /tmp/libva \
-            && ./autogen.sh \
-            && ./configure \
-                --disable-static \
-                --enable-shared \
-            && make -j$(nproc) \
-            && echo 'make install' > ./install-cmd.sh; \ 
-        else \
-            echo "Arch is not x86. Ignoring"; \
-        fi
+    for script in /scripts/LIBVA/*.sh; do \
+        chmod +x "${script}" \
+        && bash -c "${script}" ; \
+    done
 
+# LIBVDPAU
 # https://gitlab.freedesktop.org/vdpau/libvdpau/-/tree/1.4
 FROM scratch as LIBVDPAU
 COPY --from=buildbase / /
+COPY /scripts/LIBVDPAU /scripts/LIBVDPAU
 ARG LIBVDPAU
 RUN \
-    echo "**** grabbing libvdpau ****" \
-        && if uname -m | grep -q x86; then \
-            mkdir -p /tmp/libvdpau \
-            && git clone \
-                --branch ${LIBVDPAU} \
-                --depth 1 https://gitlab.freedesktop.org/vdpau/libvdpau.git \
-                /tmp/libvdpau; \ 
-        else \
-            echo "Arch is not x86. Ignoring"; \
-        fi
-RUN \
-    echo "**** compiling libvdpau ****" \
-        && if uname -m | grep -q x86; then \
-            cd /tmp/libvdpau \
-            && ./autogen.sh \
-            && ./configure \
-                --disable-static \
-                --enable-shared \
-            && make -j$(nproc) \
-            && echo 'make install' > ./install-cmd.sh; \ 
-        else \
-            echo "Arch is not x86. Ignoring"; \
-        fi
+    for script in /scripts/LIBVDPAU/*.sh; do \
+        chmod +x "${script}" \
+        && bash -c "${script}" ; \
+    done
 
+# NASM
 # https://www.nasm.us/pub/nasm/releasebuilds/
 FROM scratch as NASM
 COPY --from=buildbase / /
+COPY /scripts/NASM /scripts/NASM
 ARG NASM
 RUN \
-    echo "**** grabbing nasm ****" \
-        && mkdir -p /tmp/nasm \
-        && curl -Lf \
-            https://www.nasm.us/pub/nasm/releasebuilds/${NASM}/nasm-${NASM}.tar.bz2 | \
-            tar -jx --strip-components=1 -C /tmp/nasm
-RUN \
-    echo "**** compiling nasm ****" \
-        && cd /tmp/nasm \
-        && ./autogen.sh \
-        && ./configure \
-            --disable-static \
-            --enable-shared \
-        && make -j$(nproc) \
-        && echo 'make install' > ./install-cmd.sh
+    for script in /scripts/NASM/*.sh; do \
+        chmod +x "${script}" \
+        && bash -c "${script}" ; \
+    done
 
+# LIBVMAF
 # https://github.com/Netflix/vmaf/releases
 FROM scratch as LIBVMAF
 COPY --from=buildbase / /
 COPY --from=NASM /tmp/nasm /tmp/nasm
+COPY /scripts/LIBVMAF /scripts/LIBVMAF
 ARG LIBVMAF
 RUN \
-    echo "**** grabbing vmaf ****" \
-        && if uname -m | grep -q x86; then \
-            mkdir -p /tmp/vmaf \
-            && git clone \
-                --branch ${LIBVMAF} \
-                https://github.com/Netflix/vmaf.git \
-                /tmp/vmaf; \ 
-        else \
-            echo "Arch is not x86. Ignoring"; \
-        fi
-RUN \
-    echo "**** pre-installing nasm ****" \
-        && cd /tmp/nasm \
-        && . ./install-cmd.sh \
-    && \
-    echo "**** cleanup pre-install ****" \
-        && cd / \
-        && rm -rf /tmp/nasm \
-    && \
-    echo "**** compiling libvmaf ****" \
-        && if uname -m | grep -q x86; then \
-            cd /tmp/vmaf/libvmaf \
-            && meson build --buildtype release \
-            && ninja -vC build \
-            && echo 'cd /tmp/vmaf/libvmaf && ninja -vC build/ install' > /tmp/vmaf/install-cmd.sh; \ 
-        else \
-            echo "Arch is not x86. Ignoring"; \
-        fi
+    for script in /scripts/LIBVMAF/*.sh; do \
+        chmod +x "${script}" \
+        && bash -c "${script}" ; \
+    done
 
 # https://ftp.osuosl.org/pub/xiph/releases/ogg/?C=M;O=D
 FROM scratch as OGG
@@ -540,76 +335,32 @@ RUN \
         && make -j$(nproc) \
         && echo 'make install' > ./install-cmd.sh
 
+# VORBIS
 # https://ftp.osuosl.org/pub/xiph/releases/vorbis/
 FROM scratch as VORBIS
 COPY --from=buildbase / /
 COPY --from=OGG /tmp/ogg /tmp/ogg
+COPY /scripts/VORBIS /scripts/VORBIS
 ARG VORBIS
 RUN \
-    echo "**** grabbing vorbis ****" \
-        && mkdir -p /tmp/vorbis \
-        && curl -Lf \
-            http://downloads.xiph.org/releases/vorbis/libvorbis-${VORBIS}.tar.gz | \
-            tar -zx --strip-components=1 -C /tmp/vorbis
-RUN \
-    echo "**** pre-installing ogg ****" \
-        && cd /tmp/ogg \
-        && . ./install-cmd.sh \
-    && \
-    echo "**** cleanup pre-install ****" \
-        && cd / \
-        && rm -rf /tmp/ogg \
-    && \
-    echo "**** compiling vorbis ****" \
-        && cd /tmp/vorbis \
-        && ./configure \
-            --disable-static \
-            --enable-shared \
-        && make -j$(nproc) \
-        && echo 'make install' > ./install-cmd.sh
+    for script in /scripts/VORBIS/*.sh; do \
+        chmod +x "${script}" \
+        && bash -c "${script}" ; \
+    done
 
+# THEORA
 # https://ftp.osuosl.org/pub/xiph/releases/theora/
 FROM scratch as THEORA
 COPY --from=buildbase / /
 COPY --from=OGG /tmp/ogg /tmp/ogg
 COPY --from=VORBIS /tmp/vorbis /tmp/vorbis
+COPY /scripts/THEORA /scripts/THEORA
 ARG THEORA
 RUN \
-    echo "**** grabbing theora ****" \
-        && mkdir -p /tmp/theora \
-        && curl -Lf \
-            http://downloads.xiph.org/releases/theora/libtheora-${THEORA}.tar.gz | \
-            tar -zx --strip-components=1 -C /tmp/theora
-RUN \
-    echo "**** pre-installing ogg ****" \
-        && cd /tmp/ogg \
-        && . ./install-cmd.sh \
-    && \
-    echo "**** pre-installing vorbis ****" \
-        && cd /tmp/vorbis \
-        && . ./install-cmd.sh \
-    && \
-    echo "**** cleanup pre-install ****" \
-        && cd / \
-        && rm -rf /tmp/ogg \
-    && \
-    echo "**** compiling theora ****" \
-        && cd /tmp/theora \
-        && cp \
-            /usr/share/automake-1.15/config.guess \
-            config.guess \
-        && cp \
-            /usr/share/automake-1.15/config.sub \
-            config.sub \
-        && curl -fL \
-            'https://gitlab.xiph.org/xiph/theora/-/commit/7288b539c52e99168488dc3a343845c9365617c8.diff' \
-            > png.patch \
-        && patch ./examples/png2theora.c < png.patch \
-        && ./configure \
-            --disable-static \
-            --enable-shared \
-        && make -j$(nproc) \
-        && echo 'make install' > ./install-cmd.sh
+    for script in /scripts/THEORA/*.sh; do \
+        chmod +x "${script}" \
+        && bash -c "${script}" ; \
+    done
 
 # https://github.com/georgmartius/vid.stab/releases
 FROM scratch as LIBVIDSTAB
@@ -737,38 +488,13 @@ RUN \
 FROM scratch as LIBDAV1D
 COPY --from=buildbase / /
 COPY --from=NASM /tmp/nasm /tmp/nasm
+COPY /scripts/LIBDAV1D /scripts/LIBDAV1D
 ARG LIBDAV1D
 RUN \
-    echo "**** grabbing dav1d ****" \
-        && if uname -m | grep -q x86; then \
-            mkdir -p /tmp/dav1d \
-            && git clone \
-                --branch ${LIBDAV1D} \
-                --depth 1 https://code.videolan.org/videolan/dav1d.git \
-                /tmp/dav1d ; \
-        else \
-            echo "Arch is not x86. Ignoring"; \
-        fi
-RUN \
-    echo "**** pre-installing nasm ****" \
-        && cd /tmp/nasm \
-        && . ./install-cmd.sh \
-    && \
-    echo "**** cleanup pre-install ****" \
-        && cd / \
-        && rm -rf /tmp/nasm \
-    && \
-    echo "**** compiling dav1d ****" \
-        && if uname -m | grep -q x86; then \
-            cd /tmp/dav1d \
-            && mkdir -p build \
-            && cd build \
-            && meson --bindir="/usr/local/bin" .. \
-            && ninja \
-            && echo 'cd /tmp/dav1d/build && ninja install' > /tmp/dav1d/install-cmd.sh ; \
-        else \
-            echo "Arch is not x86. Ignoring"; \
-        fi
+    for script in /scripts/LIBDAV1D/*.sh; do \
+        chmod +x "${script}" \
+        && bash -c "${script}" ; \
+    done
 
 # https://github.com/sekrit-twc/zimg/
 FROM scratch as ZIMG
@@ -877,9 +603,9 @@ RUN \
 #                                      
 #
 FROM scratch as FFMPEG
-ARG FFMPEG_VERSION
 COPY --from=buildbase / /
 # Download FFmpeg
+ARG FFMPEG_VERSION
 RUN \
     echo "**** grabbing ffmpeg ****" \
         && mkdir -p /ffmpeg \
@@ -887,7 +613,7 @@ RUN \
         && curl -Lf \
             https://ffmpeg.org/releases/ffmpeg-${FFMPEG_VERSION}.tar.bz2 | \
             tar -jx --strip-components=1 -C /ffmpeg
-# Install all 3rd party libs
+# Add all 3rd party lib build directories to this image
 COPY --from=FONTCONFIG     /tmp   /tmp
 COPY --from=KVAZAAR        /tmp   /tmp
 COPY --from=LAME           /tmp   /tmp
@@ -919,21 +645,16 @@ COPY --from=X264           /tmp   /tmp
 COPY --from=X265           /tmp   /tmp
 COPY --from=XVID           /tmp   /tmp
 COPY --from=ZIMG           /tmp   /tmp
+# Build FFmpeg
+COPY /scripts/FFMPEG /scripts/FFMPEG
 RUN \
-    echo "**** installing ffmpeg deps ****" \
-        && for d in /tmp/*; do \
-            if [ -d "${d}" ]; then \
-                if ! ls -la "${d}/install-cmd.sh"; then \
-                    exit 1; \
-                fi \
-                && echo "  - Running installation from commands in ${d}" \
-                && ls -la "${d}/install-cmd.sh" \
-                && echo \
-                && cd ${d} \
-                && . ./install-cmd.sh \
-                && echo; \
-            fi \
-        done
+    for script in /scripts/FFMPEG/*.sh; do \
+        chmod +x "${script}" \
+        && bash -c "${script}" \
+        && if [ $? -gt 0 ]; then \
+            exit 1; \
+        fi \
+    done
 # Compile FFmpeg
 RUN \
     echo "**** compiling ffmpeg ****" \
@@ -982,15 +703,6 @@ RUN \
             --enable-libzimg \
             --enable-openssl ${ADDITIONAL_FFMPEG_ARGS} \
         && make -j$(nproc)
-# TODO: Look into adding...
-## --enable-frei0r
-## --enable-gnutls
-## --enable-gmp
-## --enable-libgme
-## --enable-librubberband
-## --enable-libsrt
-## --enable-libzvbi
-
 # Install FFmpeg and all libs to /buildout directroy
 RUN \
     echo "**** arrange files ****" \
