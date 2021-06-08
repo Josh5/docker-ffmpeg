@@ -175,6 +175,7 @@ RUN \
 
 FROM scratch as FONTCONFIG
 COPY --from=buildbase / /
+COPY --from=LIBFREETYPE /tmp/freetype /tmp/freetype
 ARG FONTCONFIG
 RUN \
     echo "**** grabbing fontconfig ****" \
@@ -187,6 +188,14 @@ RUN \
             echo "Arch is not x86. Ignoring"; \
         fi
 RUN \
+    echo "**** pre-installing freetype ****" \
+        && cd /tmp/freetype \
+        && . ./install-cmd.sh \
+    && \
+    echo "**** cleanup pre-install ****" \
+        && cd / \
+        && rm -rf /tmp/freetype  \
+    && \
     echo "**** compiling fontconfig ****" \
         && if uname -m | grep -q x86; then \
             cd /tmp/fontconfig \
