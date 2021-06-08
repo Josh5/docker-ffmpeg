@@ -283,6 +283,7 @@ RUN \
 
 FROM scratch as LIBASS
 COPY --from=buildbase / /
+COPY --from=LIBFREETYPE /tmp/freetype /tmp/freetype
 COPY --from=FONTCONFIG /tmp/fontconfig /tmp/fontconfig
 COPY --from=LIBFRIBIDI /tmp/fribidi /tmp/fribidi
 ARG LIBASS
@@ -293,6 +294,10 @@ RUN \
             https://github.com/libass/libass/archive/${LIBASS}.tar.gz | \
             tar -zx --strip-components=1 -C /tmp/libass
 RUN \
+    echo "**** pre-installing freetype ****" \
+        && cd /tmp/freetype \
+        && . ./install-cmd.sh \
+    && \
     echo "**** pre-installing fontconfig ****" \
         && cd /tmp/fontconfig \
         && . ./install-cmd.sh \
@@ -303,6 +308,7 @@ RUN \
     && \
     echo "**** cleanup pre-install ****" \
         && cd / \
+        && rm -rf /tmp/freetype \
         && rm -rf /tmp/fontconfig \
         && rm -rf /tmp/fribidi  \
     && \
