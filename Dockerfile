@@ -66,7 +66,7 @@ RUN \
     echo "**** install aarch64 specific packages ($(uname -m)) ****" \
         && if uname -m | grep -q aarch64; then \
             apt-get install -y \
-                libfontconfig1-dev \
+                libfontconfig1-dev; \
         else \
             echo "Arch does not support aarch64 runtime packages. Ignoring"; \
         fi \
