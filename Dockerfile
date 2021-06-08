@@ -60,7 +60,7 @@ RUN \
             pip3 install \
                 meson; \
         else \
-            echo "Arch does not support x86 runtime packages. Ignoring"; \
+            echo "Arch is not x86. Ignoring"; \
         fi \
     && \
     echo "**** install aarch64 specific packages ($(uname -m)) ****" \
@@ -68,7 +68,7 @@ RUN \
             apt-get install -y \
                 libfontconfig1-dev; \
         else \
-            echo "Arch does not support aarch64 runtime packages. Ignoring"; \
+            echo "Arch is not aarch64. Ignoring"; \
         fi \
     && \
     echo "**** cleanup ****" \
@@ -143,7 +143,7 @@ RUN \
                 --depth 1 https://git.videolan.org/git/ffmpeg/nv-codec-headers.git \
                 /tmp/ffnvcodec; \ 
         else \
-            echo "Arch does not support x86 runtime packages. Ignoring"; \
+            echo "Arch is not x86. Ignoring"; \
         fi
 RUN \
     echo "**** compiling ffnvcodec ****" \
@@ -152,7 +152,7 @@ RUN \
             && make -j$(nproc) \
             && echo 'make install' > ./install-cmd.sh; \ 
         else \
-            echo "Arch does not support x86 runtime packages. Ignoring"; \
+            echo "Arch is not x86. Ignoring"; \
         fi
 
 FROM scratch as LIBFREETYPE
@@ -178,13 +178,13 @@ COPY --from=buildbase / /
 ARG FONTCONFIG
 RUN \
     echo "**** grabbing fontconfig ****" \
-        && mkdir -p /tmp/fontconfig \
         && if uname -m | grep -q x86; then \
-            curl -Lf \
+            mkdir -p /tmp/fontconfig \
+            && curl -Lf \
                 https://www.freedesktop.org/software/fontconfig/release/fontconfig-${FONTCONFIG}.tar.gz | \
                 tar -zx --strip-components=1 -C /tmp/fontconfig; \ 
         else \
-            echo "Arch does not support x86 runtime packages. Ignoring"; \
+            echo "Arch is not x86. Ignoring"; \
         fi
 RUN \
     echo "**** compiling fontconfig ****" \
@@ -196,8 +196,9 @@ RUN \
             && make -j$(nproc) \
             && echo 'make install' > ./install-cmd.sh; \
         else \
-            echo "Arch does not support x86 runtime packages. Ignoring" \
-            && echo 'echo "fontconfig not built for arch..."' > /tmp/fontconfig/install-cmd.sh; \
+            echo "Arch is not x86. Ignoring" \
+            && mkdir -p /tmp/fontconfig \
+            && echo "echo 'fontconfig is not compiled for this arch ($(uname -m))...'" > /tmp/fontconfig/install-cmd.sh; \
         fi
 
 FROM scratch as LIBFRIBIDI
@@ -311,7 +312,7 @@ RUN \
             && tar xf /tmp/libdrm-${LIBDRM}.tar.xz --strip-components=1 -C /tmp/libdrm \ 
             && rm /tmp/libdrm-${LIBDRM}.tar.xz; \ 
         else \
-            echo "Arch does not support x86 runtime packages. Ignoring"; \
+            echo "Arch is not x86. Ignoring"; \
         fi
 RUN \
     echo "**** compiling libdrm ****" \
@@ -321,7 +322,7 @@ RUN \
             && ninja -vC builddir/ \
             && echo 'ninja -vC builddir/ install' > ./install-cmd.sh; \ 
         else \
-            echo "Arch does not support x86 runtime packages. Ignoring"; \
+            echo "Arch is not x86. Ignoring"; \
         fi
 
 FROM scratch as LIBVA
@@ -335,7 +336,7 @@ RUN \
                 https://github.com/intel/libva/archive/${LIBVA}.tar.gz | \
                 tar -zx --strip-components=1 -C /tmp/libva; \ 
         else \
-            echo "Arch does not support x86 runtime packages. Ignoring"; \
+            echo "Arch is not x86. Ignoring"; \
         fi
 RUN \
     echo "**** compiling libva ****" \
@@ -348,7 +349,7 @@ RUN \
             && make -j$(nproc) \
             && echo 'make install' > ./install-cmd.sh; \ 
         else \
-            echo "Arch does not support x86 runtime packages. Ignoring"; \
+            echo "Arch is not x86. Ignoring"; \
         fi
 
 # https://gitlab.freedesktop.org/vdpau/libvdpau/-/tree/1.4
@@ -364,7 +365,7 @@ RUN \
                 --depth 1 https://gitlab.freedesktop.org/vdpau/libvdpau.git \
                 /tmp/libvdpau; \ 
         else \
-            echo "Arch does not support x86 runtime packages. Ignoring"; \
+            echo "Arch is not x86. Ignoring"; \
         fi
 RUN \
     echo "**** compiling libvdpau ****" \
@@ -377,7 +378,7 @@ RUN \
             && make -j$(nproc) \
             && echo 'make install' > ./install-cmd.sh; \ 
         else \
-            echo "Arch does not support x86 runtime packages. Ignoring"; \
+            echo "Arch is not x86. Ignoring"; \
         fi
 
 # https://www.nasm.us/pub/nasm/releasebuilds/
@@ -414,7 +415,7 @@ RUN \
                 https://github.com/Netflix/vmaf.git \
                 /tmp/vmaf; \ 
         else \
-            echo "Arch does not support x86 runtime packages. Ignoring"; \
+            echo "Arch is not x86. Ignoring"; \
         fi
 RUN \
     echo "**** pre-installing nasm ****" \
@@ -432,7 +433,7 @@ RUN \
             && ninja -vC build \
             && echo 'cd /tmp/vmaf/libvmaf && ninja -vC build/ install' > /tmp/vmaf/install-cmd.sh; \ 
         else \
-            echo "Arch does not support x86 runtime packages. Ignoring"; \
+            echo "Arch is not x86. Ignoring"; \
         fi
 
 # https://ftp.osuosl.org/pub/xiph/releases/ogg/?C=M;O=D
