@@ -442,31 +442,16 @@ RUN \
         && make -j$(nproc) \
         && echo 'make install' > ./install-cmd.sh
 
+# X265
 FROM scratch as X265
 COPY --from=buildbase / /
+COPY /scripts/X265 /scripts/X265
 ARG X265
 RUN \
-    echo "**** grabbing x265 ****" \
-        && mkdir -p /tmp/x265 \
-        && curl -Lf \
-            https://github.com/videolan/x265/archive/Release_${X265}.tar.gz | \
-            tar -zx --strip-components=1 -C /tmp/x265
-RUN \
-    echo "**** compiling x265 ****" \
-        && if uname -m | grep -q x86; then \
-            cd /tmp/x265/build/linux \
-            && export MAKEFLAGS="-j$(nproc) " \
-            && ./multilib.sh \
-            && echo 'cd /tmp/x265/build/linux && make -C 8bit install' > /tmp/x265/install-cmd.sh \
-            && echo; \ 
-        else \
-            cd /tmp/x265/build/linux \
-            && export CXXFLAGS="-fPIC" \
-            && export MAKEFLAGS="-j$(nproc) " \
-            && ./multilib.sh \
-            && echo 'cd /tmp/x265/build/linux && make -C 8bit install' > /tmp/x265/install-cmd.sh \
-            && echo; \ 
-        fi
+    for script in /scripts/X265/*.sh; do \
+        chmod +x "${script}" \
+        && bash -c "${script}" ; \
+    done
 
 FROM scratch as XVID
 COPY --from=buildbase / /
